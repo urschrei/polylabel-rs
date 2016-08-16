@@ -1,0 +1,24 @@
+[package]
+name = "polylabel"
+version = "0.1.0"
+authors = ["Stephan Hügel <urschrei@gmail.com>"]
+description = "A Rust implementation of the Polylabel algorithm"
+readme = "README.md"
+keywords = ["geo"]
+repository = "https://github.com/urschrei/polylabel-rs"
+license = "MIT"
+
+[dependencies]
+libc = "0.2.14"
+geo = "0.2.5"
+num = "0.1"
+
+[lib]
+name = "polylabel"
+crate-type = ["rlib", "dylib"]
+test = true
+doctest = false
+doc = true
+
+[profile.release]
+rpath = true
