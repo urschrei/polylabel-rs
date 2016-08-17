@@ -150,7 +150,8 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
 
 #[cfg(test)]
 mod tests {
-    use super::polylabel;
+    use std::collections::BinaryHeap;
+    use super::{polylabel, Cell};
     extern crate geo;
     use geo::{Point, Polygon, LineString};
     #[test]
@@ -266,5 +267,37 @@ mod tests {
         let res = polylabel(&poly, &10.0);
         // hmm
         assert_eq!(res, Point::new(59.35615556364569, 121.8391962974644));
+    }
+    #[test]
+    // is our priority queue behaving as it should?
+    fn test_queue() {
+        let a = Cell {
+            x: 1.0,
+            y: 2.0,
+            h: 3.0,
+            distance: 4.0,
+            max_distance: 8.0,
+        };
+        let b = Cell {
+            x: 1.0,
+            y: 2.0,
+            h: 3.0,
+            distance: 4.0,
+            max_distance: 9.0,
+        };
+        let c = Cell {
+            x: 1.0,
+            y: 2.0,
+            h: 3.0,
+            distance: 4.0,
+            max_distance: 7.0,
+        };
+    let mut v = vec![];
+    v.push(a);
+    v.push(b);
+    v.push(c);
+    let mut q = BinaryHeap::from(v);
+    let largest = q.pop().unwrap();
+    assert_eq!(largest.max_distance, 9.0);
     }
 }
