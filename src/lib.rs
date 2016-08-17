@@ -76,7 +76,6 @@ fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
     }
 }
 
-// https://github.com/mapbox/polylabel/blob/master/index.js#L7-L71
 fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     where T: Float + FromPrimitive
 {
@@ -86,7 +85,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     let mut h: T = cell_size / num::cast(2.0).unwrap();
     let distance: T = signed_distance(&centroid.x(), &centroid.y(), &polygon);
     let max_distance: T = distance + h * num::cast(1.4142135623730951).unwrap();
-    // minimum priority queue
+    // Minimum priority queue
     let mut cell_queue: BinaryHeap<Cell<T>> = BinaryHeap::new();
     let mut best_cell = Cell {
         x: centroid.x(),
@@ -95,6 +94,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         distance: distance,
         max_distance: max_distance,
     };
+    // Build a regular square grid, which covers the Polygon
     let mut x = bbox.xmin;
     let mut y;
     while x < bbox.xmax {
@@ -112,19 +112,23 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         }
         x = x + cell_size;
     }
-    // pop items off the queue
+    // Pop items off the queue
     while !cell_queue.is_empty() {
         let cell = cell_queue.pop().unwrap();
         h = cell.h / num::cast(2.0).unwrap();
-        // update the best cell if we find a better one
+        // Update the best cell if we find a better one
         if cell.distance > best_cell.distance {
             best_cell.x = cell.x;
             best_cell.y = cell.y;
+            best_cell.h = cell.h;
             best_cell.distance = cell.distance;
+            best_cell.max_distance = cell.max_distance;
         }
+        // Bail out of this loop if we can't find a better solution
         if cell.max_distance - best_cell.distance <= *tolerance {
             continue;
         }
+        // Otherwise, split the cell into quadrants, and push onto queue
         let d1 = signed_distance(&(cell.x - h), &(cell.y - h), &polygon);
         cell_queue.push(Cell {
             x: cell.x - h,
@@ -277,11 +281,10 @@ mod tests {
         let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
         let poly = Polygon(ls, vec![]);
         let res = polylabel(&poly, &10.0);
-        // hmm
         assert_eq!(res, Point::new(59.35615556364569, 121.8391962974644));
     }
     #[test]
-    // is our priority queue behaving as it should?
+    // Is our minimum priority queue behaving as it should?
     fn test_queue() {
         let a = Cell {
             x: 1.0,
