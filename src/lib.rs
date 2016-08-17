@@ -11,6 +11,8 @@ use self::geo::algorithm::centroid::Centroid;
 use self::geo::algorithm::distance::Distance;
 use self::geo::algorithm::contains::Contains;
 
+use std::f64::consts::SQRT_2;
+
 /// A helper struct for `polylabel`
 /// We're defining it out here because `#[derive]` doesn't work inside functions
 #[derive(PartialEq, Debug)]
@@ -53,8 +55,8 @@ fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
     let inside = polygon.contains(&Point::new(*x, *y));
     // FIXME: this should be minimum distance from point to Polygon
     let distance = pld(&Point::new(*x, *y),
-                       &ext_ring.first().unwrap(),
-                       &ext_ring.last().unwrap());
+                       ext_ring.first().unwrap(),
+                       ext_ring.last().unwrap());
     if inside {
         distance
     } else {
@@ -84,8 +86,8 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     let bbox = polygon.bbox().unwrap();
     let cell_size = (bbox.xmax - bbox.xmin).min(bbox.ymax - bbox.ymin);
     let mut h: T = cell_size / num::cast(2.0).unwrap();
-    let distance: T = signed_distance(&centroid.x(), &centroid.y(), &polygon);
-    let max_distance: T = distance + h * num::cast(1.4142135623730951).unwrap();
+    let distance: T = signed_distance(&centroid.x(), &centroid.y(), polygon);
+    let max_distance: T = distance + h * num::cast(SQRT_2).unwrap();
     // Minimum priority queue
     let mut cell_queue: BinaryHeap<Cell<T>> = BinaryHeap::new();
     let mut best_cell = Cell {
@@ -101,13 +103,13 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     while x < bbox.xmax {
         y = bbox.ymin;
         while y < bbox.ymax {
-            let latest_dist = signed_distance(&(x + h), &(y + h), &polygon);
+            let latest_dist = signed_distance(&(x + h), &(y + h), polygon);
             cell_queue.push(Cell {
                 x: x + h,
                 y: y + h,
                 h: num::cast(0.0).unwrap(),
                 distance: latest_dist,
-                max_distance: latest_dist + h * num::cast(1.4142135623730951).unwrap(),
+                max_distance: latest_dist + h * num::cast(SQRT_2).unwrap(),
             });
             y = y + cell_size;
         }
@@ -130,37 +132,37 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
             continue;
         }
         // Otherwise, split the cell into quadrants, and push onto queue
-        let d1 = signed_distance(&(cell.x - h), &(cell.y - h), &polygon);
+        let d1 = signed_distance(&(cell.x - h), &(cell.y - h), polygon);
         cell_queue.push(Cell {
             x: cell.x - h,
             y: cell.y - h,
             h: h,
             distance: d1,
-            max_distance: d1 + h * num::cast(1.4142135623730951).unwrap(),
+            max_distance: d1 + h * num::cast(SQRT_2).unwrap(),
         });
-        let d2 = signed_distance(&(cell.x + h), &(cell.y - h), &polygon);
+        let d2 = signed_distance(&(cell.x + h), &(cell.y - h), polygon);
         cell_queue.push(Cell {
             x: cell.x + h,
             y: cell.y - h,
             h: h,
             distance: d2,
-            max_distance: d2 + h * num::cast(1.4142135623730951).unwrap(),
+            max_distance: d2 + h * num::cast(SQRT_2).unwrap(),
         });
-        let d3 = signed_distance(&(cell.x - h), &(cell.y + h), &polygon);
+        let d3 = signed_distance(&(cell.x - h), &(cell.y + h), polygon);
         cell_queue.push(Cell {
             x: cell.x - h,
             y: cell.y + h,
             h: h,
             distance: d3,
-            max_distance: d3 + h * num::cast(1.4142135623730951).unwrap(),
+            max_distance: d3 + h * num::cast(SQRT_2).unwrap(),
         });
-        let d4 = signed_distance(&(cell.x + h), &(cell.y + h), &polygon);
+        let d4 = signed_distance(&(cell.x + h), &(cell.y + h), polygon);
         cell_queue.push(Cell {
             x: cell.x + h,
             y: cell.y + h,
             h: h,
             distance: d4,
-            max_distance: d4 + h * num::cast(1.4142135623730951).unwrap(),
+            max_distance: d4 + h * num::cast(SQRT_2).unwrap(),
         });
     }
     // return best_cell centroid coordinates here
