@@ -132,37 +132,37 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
             continue;
         }
         // Otherwise, split the cell into quadrants, and push onto queue
-        let d1 = signed_distance(&(cell.x - h), &(cell.y - h), polygon);
+        let mut new_dist = signed_distance(&(cell.x - h), &(cell.y - h), polygon);
         cell_queue.push(Cell {
             x: cell.x - h,
             y: cell.y - h,
             h: h,
-            distance: d1,
-            max_distance: d1 + h * num::cast(SQRT_2).unwrap(),
+            distance: new_dist,
+            max_distance: new_dist + h * num::cast(SQRT_2).unwrap(),
         });
-        let d2 = signed_distance(&(cell.x + h), &(cell.y - h), polygon);
+        new_dist = signed_distance(&(cell.x + h), &(cell.y - h), polygon);
         cell_queue.push(Cell {
             x: cell.x + h,
             y: cell.y - h,
             h: h,
-            distance: d2,
-            max_distance: d2 + h * num::cast(SQRT_2).unwrap(),
+            distance: new_dist,
+            max_distance: new_dist + h * num::cast(SQRT_2).unwrap(),
         });
-        let d3 = signed_distance(&(cell.x - h), &(cell.y + h), polygon);
+        new_dist = signed_distance(&(cell.x - h), &(cell.y + h), polygon);
         cell_queue.push(Cell {
             x: cell.x - h,
             y: cell.y + h,
             h: h,
-            distance: d3,
-            max_distance: d3 + h * num::cast(SQRT_2).unwrap(),
+            distance: new_dist,
+            max_distance: new_dist + h * num::cast(SQRT_2).unwrap(),
         });
-        let d4 = signed_distance(&(cell.x + h), &(cell.y + h), polygon);
+        new_dist = signed_distance(&(cell.x + h), &(cell.y + h), polygon);
         cell_queue.push(Cell {
             x: cell.x + h,
             y: cell.y + h,
             h: h,
-            distance: d4,
-            max_distance: d4 + h * num::cast(SQRT_2).unwrap(),
+            distance: new_dist,
+            max_distance: new_dist + h * num::cast(SQRT_2).unwrap(),
         });
     }
     // return best_cell centroid coordinates here
