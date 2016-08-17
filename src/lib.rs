@@ -17,11 +17,11 @@ use self::geo::algorithm::contains::Contains;
 struct Cell<T>
     where T: Float
 {
-    x: T, // cell centre x
-    y: T, // cell centre y
-    h: T, // half the cell size
-    distance: T, // distance from cell centroid to polygon
-    max_distance: T, // max distance to polygon within a cell
+    x: T, // Centroid x
+    y: T, // Centroid y
+    h: T, // Half the cell size
+    distance: T, // Distance from cell centroid to polygon
+    max_distance: T, // Max distance to polygon within a cell
 }
 
 // These impls give us a min-heap when used with BinaryHeap
@@ -51,6 +51,7 @@ fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
     // exterior ring as a LineString
     let ext_ring = &exterior.0;
     let inside = polygon.contains(&Point::new(*x, *y));
+    // FIXME: this should be minimum distance from point to Polygon
     let distance = pld(&Point::new(*x, *y),
                        &ext_ring.first().unwrap(),
                        &ext_ring.last().unwrap());
