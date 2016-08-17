@@ -1,3 +1,6 @@
+use std::cmp::Ordering;
+use std::collections::BinaryHeap;
+
 extern crate num;
 use self::num::{Float, FromPrimitive};
 
@@ -8,14 +11,9 @@ use self::geo::algorithm::centroid::Centroid;
 use self::geo::algorithm::distance::Distance;
 use self::geo::algorithm::contains::Contains;
 
-
-// use std::f64;
-// use std::cmp;
-use std::collections::BinaryHeap;
-
 /// A helper struct for `polylabel`
 /// We're defining it out here because `#[derive]` doesn't work inside functions
-#[derive(PartialOrd, PartialEq, Debug)]
+#[derive(PartialEq, Debug)]
 struct Cell<T>
     where T: Float
 {
@@ -25,6 +23,23 @@ struct Cell<T>
     distance: T, // distance from cell centroid to polygon
     max_distance: T, // max distance to polygon within a cell
 }
+
+// These impls give us a min-heap when used with BinaryHeap
+impl<T> Ord for Cell<T>
+    where T: Float
+{
+    fn cmp(&self, other: &Cell<T>) -> std::cmp::Ordering {
+        other.max_distance.partial_cmp(&self.max_distance).unwrap()
+    }
+}
+impl<T> PartialOrd for Cell<T>
+    where T: Float
+{
+    fn partial_cmp(&self, other: &Cell<T>) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl<T> Eq for Cell<T> where T: Float {}
 
 // Signed distance from a Cell's centroid to a Polygon's outline
 // Returned value is negative if the point is outside the polygon's exterior ring
@@ -45,16 +60,6 @@ fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
         -distance
     }
 }
-
-impl<T> Ord for Cell<T>
-    where T: Float
-{
-    fn cmp(&self, other: &Cell<T>) -> std::cmp::Ordering {
-        // self.partial_cmp(other).unwrap()
-        self.max_distance.partial_cmp(&other.max_distance).unwrap()
-    }
-}
-impl<T> Eq for Cell<T> where T: Float {}
 
 // perpendicular distance from a point to a line
 fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
@@ -81,6 +86,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     let mut h: T = cell_size / num::cast(2.0).unwrap();
     let distance: T = signed_distance(&centroid.x(), &centroid.y(), &polygon);
     let max_distance: T = distance + h * num::cast(1.4142135623730951).unwrap();
+    // minimum priority queue
     let mut cell_queue: BinaryHeap<Cell<T>> = BinaryHeap::new();
     let mut best_cell = Cell {
         x: centroid.x(),
@@ -289,21 +295,22 @@ mod tests {
             y: 2.0,
             h: 3.0,
             distance: 4.0,
-            max_distance: 9.0,
+            max_distance: 7.0,
         };
         let c = Cell {
             x: 1.0,
             y: 2.0,
             h: 3.0,
             distance: 4.0,
-            max_distance: 7.0,
+            max_distance: 9.0,
         };
         let mut v = vec![];
         v.push(a);
         v.push(b);
         v.push(c);
         let mut q = BinaryHeap::from(v);
-        let largest = q.pop().unwrap();
-        assert_eq!(largest.max_distance, 9.0);
+        assert_eq!(q.pop().unwrap().max_distance, 7.0);
+        assert_eq!(q.pop().unwrap().max_distance, 8.0);
+        assert_eq!(q.pop().unwrap().max_distance, 9.0);
     }
 }
