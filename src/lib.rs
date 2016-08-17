@@ -42,7 +42,8 @@ impl<T> Ord for Cell<T>
     where T: Float
 {
     fn cmp(&self, other: &Cell<T>) -> std::cmp::Ordering {
-        self.partial_cmp(other).unwrap()
+        // self.partial_cmp(other).unwrap()
+        self.max_distance.partial_cmp(&other.max_distance).unwrap()
     }
 }
 impl<T> Eq for Cell<T> where T: Float {}
@@ -70,7 +71,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     let bbox = polygon.bbox().unwrap();
     let cell_size = (bbox.xmax - bbox.xmin).min(bbox.ymax - bbox.ymin);
     let mut h: T = cell_size / num::cast(2.0).unwrap();
-    let mut distance: T = signed_distance(&centroid.x(), &centroid.y(), &polygon);
+    let distance: T = signed_distance(&centroid.x(), &centroid.y(), &polygon);
     let max_distance: T = distance + h * num::cast(1.4142135623730951).unwrap();
     let mut cell_queue: BinaryHeap<Cell<T>> = BinaryHeap::new();
     let mut best_cell = Cell {
@@ -99,9 +100,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     }
     // now start popping items off the queue
     while !cell_queue.is_empty() {
-        println!("{:?}", "pop!");
         let cell = cell_queue.pop().unwrap();
-        let dist = cell.distance;
         h = cell.h / num::cast(2.0).unwrap();
         // update the best cell if we find a better one
         if cell.distance > best_cell.distance {
@@ -116,7 +115,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         cell_queue.push(Cell {
                 x: cell.x - h,
                 y: cell.y - h,
-                h: num::cast(0.0).unwrap(),
+                h: h,
                 distance: d1,
                 max_distance: d1 + h * num::cast(1.4142135623730951).unwrap(),
         });
@@ -124,16 +123,15 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         cell_queue.push(Cell {
                 x: cell.x + h,
                 y: cell.y - h,
-                h: num::cast(0.0).unwrap(),
+                h: h,
                 distance: d2,
-                // 
                 max_distance: d2 + h * num::cast(1.4142135623730951).unwrap(),
         });
         let d3 = signed_distance(&(cell.x - h), &(cell.y + h), &polygon);
         cell_queue.push(Cell {
                 x: cell.x - h,
                 y: cell.y + h,
-                h: num::cast(0.0).unwrap(),
+                h: h,
                 distance: d3,
                 max_distance: d3 + h * num::cast(1.4142135623730951).unwrap(),
         });
@@ -141,7 +139,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         cell_queue.push(Cell {
                 x: cell.x + h,
                 y: cell.y + h,
-                h: num::cast(0.0).unwrap(),
+                h: h,
                 distance: d4,
                 max_distance: d4 + h * num::cast(1.4142135623730951).unwrap(),
         });
@@ -266,6 +264,7 @@ mod tests {
         let ls = LineString(coords.iter().map(|e| { Point::new(e.0, e.1) }).collect());
         let poly = Polygon(ls, vec![]);
         let res = polylabel(&poly, &10.0);
+        // hmm
         assert_eq!(res, Point::new(59.35615556364569, 121.8391962974644));
     }
 }
