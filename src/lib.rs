@@ -74,13 +74,25 @@ impl<T> Eq for Mindist<T> where T: Float {}
 fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
     where T: Float
 {
+    let inside = polygon.contains(&Point::new(*x, *y));
+    let distance = point_polygon_distance(x, y, polygon);
+    if inside {
+        distance
+    } else {
+        -distance
+    }
+}
+
+// Minimum distance from a Point to a Polygon
+fn point_polygon_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
+    where T: Float
+{
     // minimum priority queue
     let mut dist_queue: BinaryHeap<Mindist<T>> = BinaryHeap::new();
     // get exterior ring
     let exterior = &polygon.0;
     // exterior ring as a LineString
     let ext_ring = &exterior.0;
-    let inside = polygon.contains(&Point::new(*x, *y));
     for chunk in ext_ring.chunks(2) {
         let dist = match chunk.len() {
             2 => {
@@ -97,12 +109,9 @@ fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
         };
         dist_queue.push(Mindist { distance: dist });
     }
-    if inside {
-        dist_queue.pop().unwrap().distance
-    } else {
-        -dist_queue.pop().unwrap().distance
-    }
+    dist_queue.pop().unwrap().distance
 }
+
 
 // Perpendicular distance from a point to a line
 fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
