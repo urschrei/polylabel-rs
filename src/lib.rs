@@ -8,6 +8,7 @@ use self::num::pow::pow;
 extern crate geo;
 use self::geo::{Point, Polygon};
 use self::geo::algorithm::boundingbox::BoundingBox;
+use self::geo::algorithm::distance::Distance;
 use self::geo::algorithm::centroid::Centroid;
 use self::geo::algorithm::contains::Contains;
 
@@ -118,21 +119,22 @@ fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
     where T: Float
 {
     // line segment distance squared
-    let l2 = pow(start.x() - end.x(), 2) + pow(start.y() - end.y(), 2);
+    let l2 = pow(start.distance(end), 2);
     // start == end case
-    if l2 == T::zero() { return pow(point.x() - start.x(), 2) + pow(point.y() - start.y(), 2) }
+    if l2 == T::zero() { return pow(point.distance(start), 2) }
     // Consider the line extending the segment, parameterized as start + t (end - start)
     // We find the projection of the point onto the line
     // This falls where t = [(point - start) . (end - start)] / |end - start|^2, where . is the dot product
     let t = ((point.x() - start.x()) * (end.x() - start.x()) + (point.y() - start.y()) * (end.y() - start.y())) / l2;
     // We clamp t from [0.0, 1.0] to handle points outside the segment start, end
-    if t < T::zero() { return (pow(point.x() - start.x(), 2) + pow(point.y() - start.y(), 2)).sqrt() }
-    if t > T::one() { return (pow(point.x() - end.x(), 2) + pow(point.y() - end.y(), 2)).sqrt() }
+    if t < T::zero() { return (pow(point.distance(start), 2)).sqrt() }
+    if t > T::one() { return (pow(point.distance(end), 2)).sqrt() }
     let projected = Point::new(
         start.x() + t * (end.x() - start.x()),
         start.y() + t * (end.y() - start.y())
     );
-    (pow(point.x() - projected.x(), 2) + pow(point.y() - projected.y(), 2)).sqrt()
+    // (pow(point.x() - projected.x(), 2) + pow(point.y() - projected.y(), 2)).sqrt()
+    (pow(point.distance(&projected), 2)).sqrt()
 }
 
 // Calculate ideal label position
@@ -377,7 +379,7 @@ mod tests {
         let dist3 = pld(&o3, &p1, &p2);
         let dist4 = pld(&o4, &p1, &p2);
         // Result agrees with Shapely
-        assert_eq!(dist, 2.0485900789263356);
+        assert_eq!(dist, 2.048590078926335);
         assert_eq!(dist2, 1.118033988749895);
         assert_eq!(dist3, 1.4142135623730951);
         assert_eq!(dist4, 1.5811388300841898);
