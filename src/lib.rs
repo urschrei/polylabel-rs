@@ -213,7 +213,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
 #[cfg(test)]
 mod tests {
     use std::collections::BinaryHeap;
-    use super::{polylabel, Cell};
+    use super::{polylabel, Cell, Mindist};
     extern crate geo;
     use geo::{Point, Polygon, LineString};
     #[test]
@@ -359,5 +359,20 @@ mod tests {
         assert_eq!(q.pop().unwrap().max_distance, 7.0);
         assert_eq!(q.pop().unwrap().max_distance, 8.0);
         assert_eq!(q.pop().unwrap().max_distance, 9.0);
+    }
+    #[test]
+    // Is our minimum distance queue behaving as it should?
+    fn test_dist_queue() {
+        let a = Mindist { distance: 4.0 };
+        let b = Mindist { distance: 1.0 };
+        let c = Mindist { distance: 6.0 };
+        let mut v = vec![];
+        v.push(a);
+        v.push(b);
+        v.push(c);
+        let mut q = BinaryHeap::from(v);
+        assert_eq!(q.pop().unwrap().distance, 1.0);
+        assert_eq!(q.pop().unwrap().distance, 4.0);
+        assert_eq!(q.pop().unwrap().distance, 6.0);
     }
 }
