@@ -3,12 +3,12 @@ use std::collections::BinaryHeap;
 
 extern crate num;
 use self::num::{Float, FromPrimitive};
+use self::num::pow::pow;
 
 extern crate geo;
-use self::geo::{Point, Polygon, LineString};
+use self::geo::{Point, Polygon};
 use self::geo::algorithm::boundingbox::BoundingBox;
 use self::geo::algorithm::centroid::Centroid;
-use self::geo::algorithm::distance::Distance;
 use self::geo::algorithm::contains::Contains;
 
 use std::f64::consts::SQRT_2;
@@ -112,20 +112,27 @@ fn point_polygon_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
     dist_queue.pop().unwrap().distance
 }
 
-
-// Perpendicular distance from a point to a line
+// Return minimum distance between line segment start, end and point
 fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
     where T: Float
 {
-    if start == end {
-        point.distance(start)
-    } else {
-        let numerator = ((end.x() - start.x()) * (start.y() - point.y()) -
-                         (start.x() - point.x()) * (end.y() - start.y()))
-            .abs();
-        let denominator = start.distance(end);
-        numerator / denominator
-    }
+    // line segment distance squared
+    let l2 = pow(start.x() - end.x(), 2) + pow(start.y() - end.y(), 2);
+    // start == end case
+    if l2 == T::zero() { return pow(point.x() - start.x(), 2) + pow(point.y() - start.y(), 2) }
+    // Consider the line extending the segment, parameterized as start + t (end - start).
+    // We find projection of point onto the line. 
+    // It falls where t = [(point - start) . (end - start)] / |end - start|^2
+    let t = ((point.x() - start.x()) * (end.x() - start.x()) + (point.y() - start.y()) * (end.y() - start.y())) / l2;
+    // We clamp t from [0, 1] to handle points outside the segment start, end
+    if t < T::zero() { return (pow(point.x() - start.x(), 2) + pow(point.y() - start.y(), 2)).sqrt() }
+    if t > T::one() { return (pow(point.x() - end.x(), 2) + pow(point.y() - end.y(), 2)).sqrt() }
+    let projected = Point::new(
+        start.x() + t * (end.x() - start.x()),
+        start.y() + t * (end.y() - start.y())
+    );
+    // square root
+    (pow(point.x() - projected.x(), 2) + pow(point.y() - projected.y(), 2)).sqrt()
 }
 
 // Calculate ideal label position
@@ -222,7 +229,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
 #[cfg(test)]
 mod tests {
     use std::collections::BinaryHeap;
-    use super::{polylabel, Cell, Mindist};
+    use super::{polylabel, point_polygon_distance, pld, Cell, Mindist};
     extern crate geo;
     use geo::{Point, Polygon, LineString};
     #[test]
@@ -335,6 +342,45 @@ mod tests {
         let poly = Polygon(ls, vec![]);
         let res = polylabel(&poly, &10.0);
         assert_eq!(res, Point::new(59.35615556364569, 121.8391962974644));
+    }
+    #[test]
+    fn polygon_distance_test() {
+        let coords = vec![
+            (5., 1.),
+            (4., 2.),
+            (4., 3.),
+            (5., 4.),
+            (6., 4.),
+            (7., 3.),
+            (7., 2.),
+            (6., 1.)
+        ];
+        let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
+        let poly = Polygon(ls, vec![]);
+        let dist = point_polygon_distance(&0.0, &8.0, &poly);
+        // result from Shapely
+        assert_eq!(dist, 6.363961030678928);
+
+    }
+    #[test]
+    fn point_line_distance_test() {
+        let o1 = Point::new(8.0, 0.0);
+        let o2 = Point::new(5.5, 0.0);
+        let o3 = Point::new(5.0, 0.0);
+        let o4 = Point::new(4.5, 1.5);
+
+        let p1 = Point::new(7.2, 2.0);
+        let p2 = Point::new(6.0, 1.0);
+
+        let dist = pld(&o1, &p1, &p2);
+        let dist2 = pld(&o2, &p1, &p2);
+        let dist3 = pld(&o3, &p1, &p2);
+        let dist4 = pld(&o4, &p1, &p2);
+        // Result agrees with Shapely
+        assert_eq!(dist, 2.0485900789263356);
+        assert_eq!(dist2, 1.118033988749895);
+        assert_eq!(dist3, 1.4142135623730951);
+        assert_eq!(dist4, 1.5811388300841898);
     }
     #[test]
     // Is our minimum priority queue behaving as it should?
