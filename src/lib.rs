@@ -112,7 +112,7 @@ fn point_polygon_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
     dist_queue.pop().unwrap().distance
 }
 
-// Return minimum distance between line segment start, end and point
+// Return minimum distance between Point and a Line segment
 fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
     where T: Float
 {
@@ -120,18 +120,17 @@ fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
     let l2 = pow(start.x() - end.x(), 2) + pow(start.y() - end.y(), 2);
     // start == end case
     if l2 == T::zero() { return pow(point.x() - start.x(), 2) + pow(point.y() - start.y(), 2) }
-    // Consider the line extending the segment, parameterized as start + t (end - start).
-    // We find projection of point onto the line. 
-    // It falls where t = [(point - start) . (end - start)] / |end - start|^2
+    // Consider the line extending the segment, parameterized as start + t (end - start)
+    // We find the projection of the point onto the line
+    // This falls where t = [(point - start) . (end - start)] / |end - start|^2, where . is the dot product
     let t = ((point.x() - start.x()) * (end.x() - start.x()) + (point.y() - start.y()) * (end.y() - start.y())) / l2;
-    // We clamp t from [0, 1] to handle points outside the segment start, end
+    // We clamp t from [0.0, 1.0] to handle points outside the segment start, end
     if t < T::zero() { return (pow(point.x() - start.x(), 2) + pow(point.y() - start.y(), 2)).sqrt() }
     if t > T::one() { return (pow(point.x() - end.x(), 2) + pow(point.y() - end.y(), 2)).sqrt() }
     let projected = Point::new(
         start.x() + t * (end.x() - start.x()),
         start.y() + t * (end.y() - start.y())
     );
-    // square root
     (pow(point.x() - projected.x(), 2) + pow(point.y() - projected.y(), 2)).sqrt()
 }
 
