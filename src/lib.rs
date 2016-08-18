@@ -43,28 +43,68 @@ impl<T> PartialOrd for Cell<T>
 }
 impl<T> Eq for Cell<T> where T: Float {}
 
+
+// We're going to use this struct as input for a minimum priority queue
+// We need this for efficient point-to-polygon distance
+#[derive(PartialEq, Debug)]
+struct Mindist<T>
+    where T: Float
+{
+    distance: T, // Distance from cell centroid to polygon
+}
+// These impls give us a min-heap when used with BinaryHeap
+impl<T> Ord for Mindist<T>
+    where T: Float
+{
+    fn cmp(&self, other: &Mindist<T>) -> std::cmp::Ordering {
+        other.distance.partial_cmp(&self.distance).unwrap()
+    }
+}
+impl<T> PartialOrd for Mindist<T>
+    where T: Float
+{
+    fn partial_cmp(&self, other: &Mindist<T>) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl<T> Eq for Mindist<T> where T: Float {}
+
 // Signed distance from a Cell's centroid to a Polygon's outline
 // Returned value is negative if the point is outside the polygon's exterior ring
 fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
     where T: Float
 {
+    // minimum priority queue
+    let mut dist_queue: BinaryHeap<Mindist<T>> = BinaryHeap::new();
     // get exterior ring
     let exterior = &polygon.0;
     // exterior ring as a LineString
     let ext_ring = &exterior.0;
     let inside = polygon.contains(&Point::new(*x, *y));
-    // FIXME: this should be minimum distance from point to Polygon
-    let distance = pld(&Point::new(*x, *y),
-                       ext_ring.first().unwrap(),
-                       ext_ring.last().unwrap());
+    for chunk in ext_ring.chunks(2) {
+        let dist = match chunk.len() {
+            2 => {
+                pld(&Point::new(*x, *y),
+                    chunk.first().unwrap(),
+                    chunk.last().unwrap())
+            }
+            _ => {
+                // final point in an odd-numbered exterior ring
+                pld(&Point::new(*x, *y),
+                    chunk.first().unwrap(),
+                    chunk.first().unwrap())
+            }
+        };
+        dist_queue.push(Mindist { distance: dist });
+    }
     if inside {
-        distance
+        dist_queue.pop().unwrap().distance
     } else {
-        -distance
+        -dist_queue.pop().unwrap().distance
     }
 }
 
-// perpendicular distance from a point to a line
+// Perpendicular distance from a point to a line
 fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
     where T: Float
 {
@@ -79,6 +119,7 @@ fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
     }
 }
 
+// Calculate ideal label position
 fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     where T: Float + FromPrimitive
 {
