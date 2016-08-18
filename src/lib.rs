@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
 extern crate num;
-use self::num::{Float, FromPrimitive};
+use self::num::{Float, FromPrimitive, ToPrimitive};
 use self::num::pow::pow;
 
 extern crate geo;
@@ -116,25 +116,21 @@ fn point_polygon_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
 // Return minimum distance between Point and a Line segment
 // adapted from http://stackoverflow.com/a/1501725/416626
 fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
-    where T: Float
+    where T: Float + ToPrimitive
 {
-    // line segment distance squared
-    let l2 = pow(start.distance(end), 2);
-    // start == end case
-    if l2 == T::zero() { return pow(point.distance(start), 2) }
+    let dist_squared = pow(start.distance(end), 2);
+    // Implies that start == end 
+    if dist_squared == T::zero() {
+        return pow(point.distance(start), 2);
+    }
     // Consider the line extending the segment, parameterized as start + t (end - start)
     // We find the projection of the point onto the line
     // This falls where t = [(point - start) . (end - start)] / |end - start|^2, where . is the dot product
-    let t = ((point.x() - start.x()) * (end.x() - start.x()) + (point.y() - start.y()) * (end.y() - start.y())) / l2;
     // We clamp t from [0.0, 1.0] to handle points outside the segment start, end
-    if t < T::zero() { return (pow(point.distance(start), 2)).sqrt() }
-    if t > T::one() { return (pow(point.distance(end), 2)).sqrt() }
-    let projected = Point::new(
-        start.x() + t * (end.x() - start.x()),
-        start.y() + t * (end.y() - start.y())
-    );
-    // (pow(point.x() - projected.x(), 2) + pow(point.y() - projected.y(), 2)).sqrt()
-    (pow(point.distance(&projected), 2)).sqrt()
+    let t = T::zero().max(T::one().min((*point - *start).dot(&(*end - *start)) / dist_squared));
+    let projected = Point::new(start.x() + t * (end.x() - start.x()),
+                               start.y() + t * (end.y() - start.y()));
+    point.distance(&projected)
 }
 
 // Calculate ideal label position
@@ -347,16 +343,8 @@ mod tests {
     }
     #[test]
     fn polygon_distance_test() {
-        let coords = vec![
-            (5., 1.),
-            (4., 2.),
-            (4., 3.),
-            (5., 4.),
-            (6., 4.),
-            (7., 3.),
-            (7., 2.),
-            (6., 1.)
-        ];
+        let coords = vec![(5., 1.), (4., 2.), (4., 3.), (5., 4.), (6., 4.), (7., 3.), (7., 2.),
+                          (6., 1.)];
         let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
         let poly = Polygon(ls, vec![]);
         let dist = point_polygon_distance(&0.0, &8.0, &poly);
