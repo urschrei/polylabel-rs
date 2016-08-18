@@ -113,6 +113,7 @@ fn point_polygon_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
 }
 
 // Return minimum distance between Point and a Line segment
+// adapted from http://stackoverflow.com/a/1501725/416626
 fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
     where T: Float
 {
