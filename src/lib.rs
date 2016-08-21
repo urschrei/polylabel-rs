@@ -186,7 +186,7 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     };
     // Minimum priority queue
     let mut cell_queue: BinaryHeap<Cell<T>> = BinaryHeap::new();
-    // Build a regular square grid, which covers the Polygon
+    // Build an initial quadtree node, which covers the Polygon
     let mut x = bbox.xmin;
     let mut y;
     while x < bbox.xmax {
@@ -204,6 +204,7 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         }
         x = x + cell_size;
     }
+    // Now try to find better solutions
     while !cell_queue.is_empty() {
         let cell = cell_queue.pop().unwrap();
         // Update the best cell if we find a cell with greater distance
