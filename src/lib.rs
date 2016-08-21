@@ -109,7 +109,7 @@ fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
     where T: Float + ToPrimitive
 {
     let dist_squared = pow(start.distance(end), 2);
-    // Implies that start == end 
+    // Implies that start == end
     if dist_squared == T::zero() {
         return pow(point.distance(start), 2);
     }
@@ -130,38 +130,38 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
     // 1
     let mut new_dist = signed_distance(&(cell.x - *nh), &(cell.y - *nh), polygon);
     mpq.push(Cell {
-            x: cell.x - *nh,
-            y: cell.y - *nh,
-            h: *nh,
-            distance: new_dist,
-            max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
+        x: cell.x - *nh,
+        y: cell.y - *nh,
+        h: *nh,
+        distance: new_dist,
+        max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
     });
     // 2
     new_dist = signed_distance(&(cell.x + *nh), &(cell.y - *nh), polygon);
     mpq.push(Cell {
-            x: cell.x + *nh,
-            y: cell.y - *nh,
-            h: *nh,
-            distance: new_dist,
-            max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
+        x: cell.x + *nh,
+        y: cell.y - *nh,
+        h: *nh,
+        distance: new_dist,
+        max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
     });
     // 3
     new_dist = signed_distance(&(cell.x - *nh), &(cell.y + *nh), polygon);
     mpq.push(Cell {
-            x: cell.x - *nh,
-            y: cell.y + *nh,
-            h: *nh,
-            distance: new_dist,
-            max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
+        x: cell.x - *nh,
+        y: cell.y + *nh,
+        h: *nh,
+        distance: new_dist,
+        max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
     });
     // 4
     new_dist = signed_distance(&(cell.x + *nh), &(cell.y + *nh), polygon);
     mpq.push(Cell {
-            x: cell.x + *nh,
-            y: cell.y + *nh,
-            h: *nh,
-            distance: new_dist,
-            max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
+        x: cell.x + *nh,
+        y: cell.y + *nh,
+        h: *nh,
+        distance: new_dist,
+        max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
     });
 }
 
@@ -359,17 +359,8 @@ mod tests {
     // Point to Polygon, inside point
     fn polygon_distance_inside_test() {
         // an octagon
-        let points = vec![
-            (5., 1.),
-            (4., 2.),
-            (4., 3.),
-            (5., 4.),
-            (6., 4.),
-            (7., 3.),
-            (7., 2.),
-            (6., 1.),
-            (5., 1.)
-        ];
+        let points = vec![(5., 1.), (4., 2.), (4., 3.), (5., 4.), (6., 4.), (7., 3.), (7., 2.),
+                          (6., 1.), (5., 1.)];
         let ls = LineString(points.iter().map(|e| Point::new(e.0, e.1)).collect());
         let poly = Polygon(ls, vec![]);
         // A Random point inside the octagon
