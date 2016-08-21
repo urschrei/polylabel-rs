@@ -12,8 +12,6 @@ use self::geo::algorithm::distance::Distance;
 use self::geo::algorithm::centroid::Centroid;
 use self::geo::algorithm::contains::Contains;
 
-use std::f64::consts::SQRT_2;
-
 /// A helper struct for `polylabel`
 /// We're defining it out here because `#[derive]` doesn't work inside functions
 #[derive(PartialEq, Debug)]
@@ -127,6 +125,7 @@ fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
 fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &Polygon<T>)
     where T: Float
 {
+    let two = T::one() + T::one();
     // 1
     let mut new_dist = signed_distance(&(cell.x - *nh), &(cell.y - *nh), polygon);
     mpq.push(Cell {
@@ -134,7 +133,7 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
         y: cell.y - *nh,
         h: *nh,
         distance: new_dist,
-        max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
+        max_distance: new_dist + *nh * two.sqrt(),
     });
     // 2
     new_dist = signed_distance(&(cell.x + *nh), &(cell.y - *nh), polygon);
@@ -143,7 +142,7 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
         y: cell.y - *nh,
         h: *nh,
         distance: new_dist,
-        max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
+        max_distance: new_dist + *nh * two.sqrt(),
     });
     // 3
     new_dist = signed_distance(&(cell.x - *nh), &(cell.y + *nh), polygon);
@@ -152,7 +151,7 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
         y: cell.y + *nh,
         h: *nh,
         distance: new_dist,
-        max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
+        max_distance: new_dist + *nh * two.sqrt(),
     });
     // 4
     new_dist = signed_distance(&(cell.x + *nh), &(cell.y + *nh), polygon);
@@ -161,7 +160,7 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
         y: cell.y + *nh,
         h: *nh,
         distance: new_dist,
-        max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
+        max_distance: new_dist + *nh * two.sqrt(),
     });
 }
 
@@ -169,13 +168,14 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
 pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     where T: Float + FromPrimitive
 {
+    let two = T::one() + T::one();
     // Initial best cell values
     let centroid = polygon.centroid().unwrap();
     let bbox = polygon.bbox().unwrap();
     let cell_size = (bbox.xmax - bbox.xmin).min(bbox.ymax - bbox.ymin);
-    let mut h: T = cell_size / num::cast(2.0).unwrap();
+    let mut h: T = cell_size / two;
     let distance: T = signed_distance(&centroid.x(), &centroid.y(), polygon);
-    let max_distance: T = distance + T::zero() * num::cast(SQRT_2).unwrap();
+    let max_distance: T = distance + T::zero() * two.sqrt();
 
     let mut best_cell = Cell {
         x: centroid.x(),
@@ -198,7 +198,7 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
                 y: y + h,
                 h: h,
                 distance: latest_dist,
-                max_distance: latest_dist + h * num::cast(SQRT_2).unwrap(),
+                max_distance: latest_dist + h * two.sqrt(),
             });
             y = y + cell_size;
         }
@@ -220,7 +220,7 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
             continue;
         }
         // Otherwise, add a new quadtree node
-        h = cell.h / num::cast(2.0).unwrap();
+        h = cell.h / two;
         add_quad(&mut cell_queue, &cell, &h, polygon);
     }
     // We've exhausted the queue, so return the best solution we've found
