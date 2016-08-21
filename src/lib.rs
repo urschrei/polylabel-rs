@@ -76,6 +76,8 @@ fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
     where T: Float
 {
     let inside = polygon.contains(&Point::new(*x, *y));
+    // FIXME: use LineString distance when it lands in rust-geo
+    // Polygon distance might return 0.0 if the point is contained or on a boundary
     let distance = point_polygon_distance(x, y, polygon);
     if inside {
         distance
@@ -160,10 +162,9 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         }
         x = x + cell_size;
     }
-    // Pop items off the queue
     while !cell_queue.is_empty() {
         let cell = cell_queue.pop().unwrap();
-        // Update the best cell if we find a better one
+        // Update the best cell if we find a cell with greater distance
         if cell.distance > best_cell.distance {
             best_cell.x = cell.x;
             best_cell.y = cell.y;
@@ -171,11 +172,12 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
             best_cell.distance = cell.distance;
             best_cell.max_distance = cell.max_distance;
         }
-        // Bail out of this loop if we can't find a better solution
+        // Bail out of this iteration if we can't find a better solution
         if cell.max_distance - best_cell.distance <= *tolerance {
             continue;
         }
-        // Otherwise, split the cell into quadrants, and push onto queue
+        // Otherwise, new quadtree
+        // FIXME: makes this a method on Cell, it's super error-prone atm
         h = cell.h / num::cast(2.0).unwrap();
         let mut new_dist = signed_distance(&(cell.x - h), &(cell.y - h), polygon);
         cell_queue.push(Cell {
@@ -210,7 +212,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
             max_distance: new_dist + h * num::cast(SQRT_2).unwrap(),
         });
     }
-    // return best_cell centroid coordinates here
+    // We've exhausted the queue, so return the best solution we've found
     Point::new(best_cell.x, best_cell.y)
 }
 
