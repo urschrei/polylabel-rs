@@ -94,26 +94,14 @@ fn point_polygon_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
     let exterior = &polygon.0;
     // exterior ring as a LineString
     let ext_ring = &exterior.0;
-    for chunk in ext_ring.chunks(2) {
-        let dist = match chunk.len() {
-            2 => {
-                pld(&Point::new(*x, *y),
-                    chunk.first().unwrap(),
-                    chunk.last().unwrap())
-            }
-            _ => {
-                // final point in an odd-numbered exterior ring
-                pld(&Point::new(*x, *y),
-                    chunk.first().unwrap(),
-                    chunk.first().unwrap())
-            }
-        };
+    for chunk in ext_ring.windows(2) {
+        let dist = pld(&Point::new(*x, *y), &chunk[0], &chunk[1]);
         dist_queue.push(Mindist { distance: dist });
     }
     dist_queue.pop().unwrap().distance
 }
 
-// Return minimum distance between Point and a Line segment
+// Return minimum distance between a Point and a Line segment
 // adapted from http://stackoverflow.com/a/1501725/416626
 fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
     where T: Float + ToPrimitive
@@ -137,21 +125,23 @@ fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
 fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     where T: Float + FromPrimitive
 {
+    // Initial best cell values
     let centroid = polygon.centroid().unwrap();
     let bbox = polygon.bbox().unwrap();
     let cell_size = (bbox.xmax - bbox.xmin).min(bbox.ymax - bbox.ymin);
     let mut h: T = cell_size / num::cast(2.0).unwrap();
     let distance: T = signed_distance(&centroid.x(), &centroid.y(), polygon);
-    let max_distance: T = distance + h * num::cast(SQRT_2).unwrap();
-    // Minimum priority queue
-    let mut cell_queue: BinaryHeap<Cell<T>> = BinaryHeap::new();
+    let max_distance: T = distance + T::zero() * num::cast(SQRT_2).unwrap();
+
     let mut best_cell = Cell {
         x: centroid.x(),
         y: centroid.y(),
-        h: num::cast(0.0).unwrap(),
+        h: T::zero(),
         distance: distance,
         max_distance: max_distance,
     };
+    // Minimum priority queue
+    let mut cell_queue: BinaryHeap<Cell<T>> = BinaryHeap::new();
     // Build a regular square grid, which covers the Polygon
     let mut x = bbox.xmin;
     let mut y;
@@ -162,7 +152,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
             cell_queue.push(Cell {
                 x: x + h,
                 y: y + h,
-                h: num::cast(0.0).unwrap(),
+                h: h,
                 distance: latest_dist,
                 max_distance: latest_dist + h * num::cast(SQRT_2).unwrap(),
             });
@@ -173,7 +163,6 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     // Pop items off the queue
     while !cell_queue.is_empty() {
         let cell = cell_queue.pop().unwrap();
-        h = cell.h / num::cast(2.0).unwrap();
         // Update the best cell if we find a better one
         if cell.distance > best_cell.distance {
             best_cell.x = cell.x;
@@ -187,6 +176,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
             continue;
         }
         // Otherwise, split the cell into quadrants, and push onto queue
+        h = cell.h / num::cast(2.0).unwrap();
         let mut new_dist = signed_distance(&(cell.x - h), &(cell.y - h), polygon);
         cell_queue.push(Cell {
             x: cell.x - h,
@@ -338,8 +328,8 @@ mod tests {
                           (-75.57274028771249, 110.01960141091608)];
         let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
         let poly = Polygon(ls, vec![]);
-        let res = polylabel(&poly, &10.0);
-        assert_eq!(res, Point::new(59.35615556364569, 121.8391962974644));
+        let res = polylabel(&poly, &10.000);
+        assert_eq!(res, Point::new(59.35615556364569, 121.83919629746435));
     }
     #[test]
     fn polygon_distance_test() {
@@ -353,24 +343,50 @@ mod tests {
 
     }
     #[test]
+    // Point to Polygon, inside point
+    fn polygon_distance_inside_test() {
+        // an octagon
+        let points = vec![
+            (5., 1.),
+            (4., 2.),
+            (4., 3.),
+            (5., 4.),
+            (6., 4.),
+            (7., 3.),
+            (7., 2.),
+            (6., 1.),
+            (5., 1.)
+        ];
+        let ls = LineString(points.iter().map(|e| Point::new(e.0, e.1)).collect());
+        let poly = Polygon(ls, vec![]);
+        // A Random point inside the octagon
+        let dist = point_polygon_distance(&5.5, &2.1, &poly);
+        assert_eq!(dist, 1.1);
+    }
+    #[test]
     fn point_line_distance_test() {
         let o1 = Point::new(8.0, 0.0);
         let o2 = Point::new(5.5, 0.0);
         let o3 = Point::new(5.0, 0.0);
         let o4 = Point::new(4.5, 1.5);
+        let o5 = Point::new(3.5, 2.5);
 
         let p1 = Point::new(7.2, 2.0);
         let p2 = Point::new(6.0, 1.0);
+        let p3 = Point::new(4.4, 2.0);
+        let p4 = Point::new(2.6, 2.0);
 
         let dist = pld(&o1, &p1, &p2);
         let dist2 = pld(&o2, &p1, &p2);
         let dist3 = pld(&o3, &p1, &p2);
         let dist4 = pld(&o4, &p1, &p2);
-        // Result agrees with Shapely
+        let dist5 = pld(&o5, &p3, &p4);
+        // Results agrees with Shapely
         assert_eq!(dist, 2.048590078926335);
         assert_eq!(dist2, 1.118033988749895);
         assert_eq!(dist3, 1.4142135623730951);
         assert_eq!(dist4, 1.5811388300841898);
+        assert_eq!(dist5, 0.5);
     }
     #[test]
     // Is our minimum priority queue behaving as it should?
@@ -408,16 +424,16 @@ mod tests {
     #[test]
     // Is our minimum distance queue behaving as it should?
     fn test_dist_queue() {
-        let a = Mindist { distance: 4.0 };
-        let b = Mindist { distance: 1.0 };
+        let a = Mindist { distance: 5.14 };
+        let b = Mindist { distance: 5.0 };
         let c = Mindist { distance: 6.0 };
         let mut v = vec![];
         v.push(a);
         v.push(b);
         v.push(c);
         let mut q = BinaryHeap::from(v);
-        assert_eq!(q.pop().unwrap().distance, 1.0);
-        assert_eq!(q.pop().unwrap().distance, 4.0);
+        assert_eq!(q.pop().unwrap().distance, 5.0);
+        assert_eq!(q.pop().unwrap().distance, 5.14);
         assert_eq!(q.pop().unwrap().distance, 6.0);
     }
 }
