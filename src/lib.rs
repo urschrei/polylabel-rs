@@ -165,8 +165,8 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
     });
 }
 
-// Calculate ideal label position
-fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
+// Calculate a Polygon's ideal label position
+pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     where T: Float + FromPrimitive
 {
     // Initial best cell values
