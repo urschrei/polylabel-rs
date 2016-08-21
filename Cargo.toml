@@ -9,7 +9,7 @@ repository = "https://github.com/urschrei/polylabel-rs"
 license = "MIT"
 
 [dependencies]
-libc = "0.2.14"
+libc = "0.2.15"
 geo = "0.2.5"
 num = "0.1"
 
