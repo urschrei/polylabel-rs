@@ -177,7 +177,7 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
             continue;
         }
         // Otherwise, new quadtree
-        // FIXME: makes this a method on Cell, it's super error-prone atm
+        // FIXME: make this a method on Cell, it's super error-prone atm
         h = cell.h / num::cast(2.0).unwrap();
         let mut new_dist = signed_distance(&(cell.x - h), &(cell.y - h), polygon);
         cell_queue.push(Cell {
