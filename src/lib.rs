@@ -123,6 +123,48 @@ fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
     point.distance(&projected)
 }
 
+// Add a new quadtree node to the minimum priority queue
+fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &Polygon<T>)
+    where T: Float
+{
+    // 1
+    let mut new_dist = signed_distance(&(cell.x - *nh), &(cell.y - *nh), polygon);
+    mpq.push(Cell {
+            x: cell.x - *nh,
+            y: cell.y - *nh,
+            h: *nh,
+            distance: new_dist,
+            max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
+    });
+    // 2
+    new_dist = signed_distance(&(cell.x + *nh), &(cell.y - *nh), polygon);
+    mpq.push(Cell {
+            x: cell.x + *nh,
+            y: cell.y - *nh,
+            h: *nh,
+            distance: new_dist,
+            max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
+    });
+    // 3
+    new_dist = signed_distance(&(cell.x - *nh), &(cell.y + *nh), polygon);
+    mpq.push(Cell {
+            x: cell.x - *nh,
+            y: cell.y + *nh,
+            h: *nh,
+            distance: new_dist,
+            max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
+    });
+    // 4
+    new_dist = signed_distance(&(cell.x + *nh), &(cell.y + *nh), polygon);
+    mpq.push(Cell {
+            x: cell.x + *nh,
+            y: cell.y + *nh,
+            h: *nh,
+            distance: new_dist,
+            max_distance: new_dist + *nh * num::cast(SQRT_2).unwrap(),
+    });
+}
+
 // Calculate ideal label position
 fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     where T: Float + FromPrimitive
@@ -176,41 +218,9 @@ fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         if cell.max_distance - best_cell.distance <= *tolerance {
             continue;
         }
-        // Otherwise, new quadtree
-        // FIXME: make this a method on Cell, it's super error-prone atm
+        // Otherwise, add a new quadtree node
         h = cell.h / num::cast(2.0).unwrap();
-        let mut new_dist = signed_distance(&(cell.x - h), &(cell.y - h), polygon);
-        cell_queue.push(Cell {
-            x: cell.x - h,
-            y: cell.y - h,
-            h: h,
-            distance: new_dist,
-            max_distance: new_dist + h * num::cast(SQRT_2).unwrap(),
-        });
-        new_dist = signed_distance(&(cell.x + h), &(cell.y - h), polygon);
-        cell_queue.push(Cell {
-            x: cell.x + h,
-            y: cell.y - h,
-            h: h,
-            distance: new_dist,
-            max_distance: new_dist + h * num::cast(SQRT_2).unwrap(),
-        });
-        new_dist = signed_distance(&(cell.x - h), &(cell.y + h), polygon);
-        cell_queue.push(Cell {
-            x: cell.x - h,
-            y: cell.y + h,
-            h: h,
-            distance: new_dist,
-            max_distance: new_dist + h * num::cast(SQRT_2).unwrap(),
-        });
-        new_dist = signed_distance(&(cell.x + h), &(cell.y + h), polygon);
-        cell_queue.push(Cell {
-            x: cell.x + h,
-            y: cell.y + h,
-            h: h,
-            distance: new_dist,
-            max_distance: new_dist + h * num::cast(SQRT_2).unwrap(),
-        });
+        add_quad(&mut cell_queue, &cell, &h, polygon);
     }
     // We've exhausted the queue, so return the best solution we've found
     Point::new(best_cell.x, best_cell.y)
