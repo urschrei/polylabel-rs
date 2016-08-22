@@ -12,17 +12,20 @@ use self::geo::algorithm::distance::Distance;
 use self::geo::algorithm::centroid::Centroid;
 use self::geo::algorithm::contains::Contains;
 
-/// A helper struct for `polylabel`
-/// We're defining it out here because `#[derive]` doesn't work inside functions
+// A helper struct for `polylabel`
 #[derive(PartialEq, Debug)]
 struct Cell<T>
     where T: Float
 {
-    x: T, // Centroid x
-    y: T, // Centroid y
-    h: T, // Half the cell size
-    distance: T, // Distance from cell centroid to polygon
-    max_distance: T, // Max distance to polygon within a cell
+    // Centroid coordinates
+    x: T,
+    y: T,
+    // Half the cell size
+    h: T,
+    // Distance from centroid to polygon
+    distance: T,
+    // Maximum distance to polygon within a cell
+    max_distance: T,
 }
 
 // These impls give us a min-heap when used with BinaryHeap
