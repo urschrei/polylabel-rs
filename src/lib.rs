@@ -1,3 +1,6 @@
+#![doc(html_logo_url = "https://cdn.rawgit.com/urschrei/polylabel-rs/518c8fea1968f5f73ed116387d23ddf750086bde/ell.svg",
+       html_root_url = "https://urschrei.github.io/polylabel-rs/")]
+//! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
@@ -170,6 +173,35 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
 /// Calculate a Polygon's ideal label position by calculating its ✨pole of inaccessibility✨  
 /// 
 /// The calculation uses an [iterative grid-based algorithm](https://github.com/mapbox/polylabel#how-the-algorithm-works).
+///
+/// # Examples
+///
+/// ```
+/// use polylabel::polylabel;
+/// extern crate geo;
+/// use self::geo::{Point, LineString, Polygon};
+///
+/// // An approximate `L` shape
+/// let coords = vec![
+///    (0.0, 0.0),
+///    (4.0, 0.0),
+///    (4.0, 1.0),
+///    (1.0, 1.0),
+///    (1.0, 6.0),
+///    (0.0, 6.0),
+///    (0.0, 0.0)];
+///
+/// let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
+/// let poly = Polygon(ls, vec![]);
+/// 
+/// // Its centroid lies outside the polygon
+/// assert_eq!(poly.centroid(), Point::new(1.25, 2.25));
+/// 
+/// let label_position = polylabel(&poly, &1.0);
+/// // Optimum label position is inside the polygon
+/// assert_eq!(label_position, Point::new(2.5, 0.5));
+/// ```
+///
 pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     where T: Float + FromPrimitive
 {
@@ -464,6 +496,23 @@ mod tests {
         let poly = Polygon(ls, vec![]);
         let res = polylabel(&poly, &1.0);
         assert!(poly.contains(&res)); 
+    }
+    #[test]
+    fn polygon_l_test() {
+        // an L shape
+        let coords = vec![
+        (0.0, 0.0),
+        (4.0, 0.0),
+        (4.0, 1.0),
+        (1.0, 1.0),
+        (1.0, 6.0),
+        (0.0, 6.0),
+        (0.0, 0.0)
+     ];
+        let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
+        let poly = Polygon(ls, vec![]);
+        let res = polylabel(&poly, &1.0);
+        assert_eq!(res, Point::new(2.5, 0.5)); 
     }
     #[test]
     fn polygon_distance_test() {
