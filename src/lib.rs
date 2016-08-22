@@ -164,7 +164,9 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
     });
 }
 
-// Calculate a Polygon's ideal label position
+/// Calculate a Polygon's ideal label position by calculating its ✨pole of inaccessibility✨  
+/// 
+/// The calculation uses an [iterative grid-based algorithm](https://github.com/mapbox/polylabel#how-the-algorithm-works).
 pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     where T: Float + FromPrimitive
 {
@@ -235,6 +237,7 @@ mod tests {
     use geo::{Point, Polygon, LineString};
     use geo::contains::Contains;
     #[test]
+    // polygons are those used in Shapely's tests
     fn test_polylabel() {
         let coords = vec![(-75.57274028771249, 110.01960141091608),
                           (-47.01425001453319, 224.2535625036333),
