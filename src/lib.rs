@@ -1,4 +1,4 @@
-#![doc(html_logo_url = "https://cdn.rawgit.com/urschrei/polylabel-rs/518c8fea1968f5f73ed116387d23ddf750086bde/ell.svg",
+#![doc(html_logo_url = "https://cdn.rawgit.com/urschrei/polylabel-rs/5ab07d193f61bb0e16338a6d19a08ba32f153ddb/ell.svg",
        html_root_url = "https://urschrei.github.io/polylabel-rs/")]
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 use std::cmp::Ordering;
@@ -187,19 +187,19 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
 ///    (4.0, 0.0),
 ///    (4.0, 1.0),
 ///    (1.0, 1.0),
-///    (1.0, 6.0),
-///    (0.0, 6.0),
+///    (1.0, 4.0),
+///    (0.0, 4.0),
 ///    (0.0, 0.0)];
 ///
 /// let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
 /// let poly = Polygon(ls, vec![]);
 /// 
 /// // Its centroid lies outside the polygon
-/// assert_eq!(poly.centroid(), Point::new(1.25, 2.25));
+/// assert_eq!(poly.centroid(), Point::new(1.3571428571428572, 1.3571428571428572));
 /// 
 /// let label_position = polylabel(&poly, &1.0);
 /// // Optimum label position is inside the polygon
-/// assert_eq!(label_position, Point::new(2.5, 0.5));
+/// assert_eq!(label_position, Point::new(0.5625, 0.5625));
 /// ```
 ///
 pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
@@ -505,14 +505,14 @@ mod tests {
         (4.0, 0.0),
         (4.0, 1.0),
         (1.0, 1.0),
-        (1.0, 6.0),
-        (0.0, 6.0),
+        (1.0, 4.0),
+        (0.0, 4.0),
         (0.0, 0.0)
      ];
         let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
         let poly = Polygon(ls, vec![]);
-        let res = polylabel(&poly, &1.0);
-        assert_eq!(res, Point::new(2.5, 0.5)); 
+        let res = polylabel(&poly, &0.10);
+        assert_eq!(res, Point::new(0.5625, 0.5625)); 
     }
     #[test]
     fn polygon_distance_test() {
