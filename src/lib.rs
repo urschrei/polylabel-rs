@@ -174,7 +174,12 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
     });
 }
 
-// Outer and inner polygon rings
+/// Outer and inner polygon rings
+///
+/// Can be:
+/// 
+/// - `Vec<[c_double; 2]>` (exterior ring)
+/// - `Vec<Vec<[c_double: 2]>>` (interior rings)
 #[repr(C)]
 pub struct Array {
     pub data: *const c_void,
