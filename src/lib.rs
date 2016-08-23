@@ -3,13 +3,17 @@
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
+use std::slice;
+
+extern crate libc;
+use self::libc::{c_void, c_double, size_t};
 
 extern crate num;
 use self::num::{Float, FromPrimitive, ToPrimitive};
 use self::num::pow::pow;
 
 extern crate geo;
-use self::geo::{Point, Polygon};
+use self::geo::{Point, Polygon, LineString};
 use self::geo::algorithm::boundingbox::BoundingBox;
 use self::geo::algorithm::distance::Distance;
 use self::geo::algorithm::centroid::Centroid;
@@ -168,6 +172,48 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
         distance: new_dist,
         max_distance: new_dist + *nh * two.sqrt(),
     });
+}
+
+// Outer and inner polygon rings
+#[repr(C)]
+pub struct Array {
+    pub data: *const c_void,
+    pub len: size_t,
+}
+
+// Optimum Polygon label position
+#[repr(C)]
+pub struct Position {
+    pub x_pos: c_double,
+    pub y_pos: c_double,
+}
+
+// From and Into traits for Adjustment
+impl <T>From<Point<T>> for Position
+    where T: Float
+{
+    fn from(point: Point<T>) -> Position {
+        Position {
+            x_pos: point.x().to_f64().unwrap() as c_double,
+            y_pos: point.y().to_f64().unwrap() as c_double,
+        }
+    }
+}
+
+/// FFI access to the Polylabel function
+#[no_mangle]
+pub extern "C" fn polylabel_ffi(outer: Array, inners: Array, tolerance: c_double) -> Position
+{
+    let exterior = unsafe { slice::from_raw_parts(outer.data as *mut [c_double; 2], outer.len).to_vec() };
+    let interior = unsafe { slice::from_raw_parts(inners.data as *mut Vec<[c_double; 2]>, inners.len).to_vec() };
+    
+    let ls_ext = LineString(exterior.iter().map(|e| Point::new(e[0], e[1])).collect());
+    let ls_int: Vec<LineString<c_double>> = interior.iter().map(|vec| {
+        LineString(vec.iter().map(|e| Point::new(e[0], e[1])).collect())
+    }).collect();
+
+    let poly = Polygon(ls_ext, ls_int);
+    polylabel(&poly, &tolerance).into()
 }
 
 /// Calculate a Polygon's ideal label position by calculating its ✨pole of inaccessibility✨  
