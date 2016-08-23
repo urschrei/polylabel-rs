@@ -181,14 +181,14 @@ pub struct Array {
     pub len: size_t,
 }
 
-// Optimum Polygon label position
+/// Optimum Polygon label position
 #[repr(C)]
 pub struct Position {
     pub x_pos: c_double,
     pub y_pos: c_double,
 }
 
-// From and Into traits for Adjustment
+// convert a Polylabel result Point into values that can be sent across the FFI boundary 
 impl <T>From<Point<T>> for Position
     where T: Float
 {
