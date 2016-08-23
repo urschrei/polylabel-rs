@@ -205,7 +205,9 @@ impl <T>From<Point<T>> for Position
     }
 }
 
-/// FFI access to the Polylabel function
+/// FFI access to the [`polylabel`](fn.polylabel.html) function
+///
+/// Accepts three arguments: an exterior ring [`Array`](struct.Array.html), an interior rings [`Array`](struct.Array.html), and a tolerance.
 #[no_mangle]
 pub extern "C" fn polylabel_ffi(outer: Array, inners: Array, tolerance: c_double) -> Position
 {
