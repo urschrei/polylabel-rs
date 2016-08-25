@@ -320,7 +320,7 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         if cell.max_distance - best_cell.distance <= *tolerance {
             continue;
         }
-        // Otherwise, add a new quadtree node
+        // Otherwise, add a new quadtree node and start again
         h = cell.h / two;
         add_quad(&mut cell_queue, &cell, &h, polygon);
     }
