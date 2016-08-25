@@ -3,9 +3,9 @@
 """
 ffi.py
 
-Created by Stephan Hügel on 2016-08-3
+Created by Stephan Hügel on 2016-08-25
 
-This file is part of rdp.
+This file is part of polylabel-rs.
 
 The MIT License (MIT)
 
@@ -43,11 +43,39 @@ extension = {'darwin': '.dylib', 'win32': '.dll'}.get(platform, '.so')
 
 lib = cdll.LoadLibrary(os.path.join(file_path, "target/release", prefix + "polylabel" + extension))
 
+
+class _InnersArray(Structure):
+    """
+    Convert sequence of float lists to a C-compatible void array
+    example: [[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]]
+
+    Each sequence member is an interior Polygon ring
+
+    """
+    _fields_ = [("data", c_void_p),
+                ("len", c_size_t)]
+
+    @classmethod
+    def from_param(cls, seq):
+        """  Allow implicit conversions """
+        return seq if isinstance(seq, cls) else cls(seq)
+
+
+    def __init__(self, seq, data_type = c_double):
+        self.arr = np.asarray([_FFIArray(s) for s in seq])
+        ring_array_type = _FFIArray * len(seq)
+        ring_array = ring_array_type()
+        for i, arr in enumerate(self.arr):
+            ring_array[i] = arr
+        self.data = cast(ring_array, c_void_p)
+        self.len = len(self.arr)
+
 class _FFIArray(Structure):
     """
     Convert sequence of float lists to a C-compatible void array
     example: [[1.0, 2.0], [3.0, 4.0]]
 
+    This represents a Polygon exterior ring
     """
     _fields_ = [("data", c_void_p),
                 ("len", c_size_t)]
@@ -68,13 +96,20 @@ class _CoordResult(Structure):
     """ Container for returned FFI coordinate data """
     _fields_ = [("x_pos", c_double), ("y_pos", c_double)]
 
+
+def _unpack_coordresult(res, _func, _args):
+    """ return our coordinates in a sensible format (a tuple) """
+    return res.x_pos, res.y_pos
+
 labelpos = lib.polylabel_ffi
-labelpos.argtypes = (_FFIArray, _FFIArray, c_double)
+labelpos.argtypes = (_FFIArray, _InnersArray, c_double)
 labelpos.restype = _CoordResult
+labelpos.errcheck = _unpack_coordresult
 
 
 if __name__ == "__main__":
-    print(labelpos(
+    # test that everything's working
+    res = (labelpos(
         [[4.0, 1.0],
          [5.0, 2.0],
          [5.0, 3.0],
@@ -85,8 +120,9 @@ if __name__ == "__main__":
          [3.0, 1.0],
          [4.0, 1.0]],
         [
-            [[3.5, 3.5], [4.4, 2.0], [2.6, 2.0], [3.5, 3.5]],
+            [3.5, 3.5, [4.4, 2.0], [2.6, 2.0], [3.5, 3.5]],
             [[4.0, 3.0], [4.0, 3.2], [4.5, 3.2], [4.0, 3.0]]
         ],
         0.1)
     )
+    print(res)
