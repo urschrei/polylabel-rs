@@ -27,6 +27,9 @@ let label_pos = polylabel(&poly, &0.10);
 ```
 <img src="https://cdn.rawgit.com/urschrei/polylabel-rs/7a07336e85572eb5faaf0657c2383d7de5620cd8/ell.svg"/>
 
+## Documentation
+https://urschrei.github.io/polylabel-rs/polylabel/index.html
+
 # FFI
 Call `polylabel_ffi` with:
 - `Array` (exterior Polygon ring)
