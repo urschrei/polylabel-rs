@@ -1,0 +1,88 @@
+environment:
+  VisualStudioVersion: 8.0
+  global:
+    # This will be used as part of the zipfile name
+    # TODO change the project name
+    PROJECT_NAME: polylabel-rs
+    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\ci\\run_with_env.cmd"
+  # TODO feel free to delete targets/channels you don't need
+  matrix:
+    # Stable channel
+    # - TARGET: i686-pc-windows-msvc
+    #   CHANNEL: stable
+    # - TARGET: x86_64-pc-windows-msvc
+    #   CHANNEL: stable
+    - TARGET: x86_64-pc-windows-gnu
+      CHANNEL: stable
+    - TARGET: i686-pc-windows-gnu
+      CHANNEL: stable
+    # Beta channel
+    # - TARGET: i686-pc-windows-msvc
+    #   CHANNEL: beta
+    - TARGET: x86_64-pc-windows-gnu
+      CHANNEL: beta
+    # Nightly channel
+    # - TARGET: i686-pc-windows-msvc
+    #   CHANNEL: nightly
+    - TARGET: x86_64-pc-windows-gnu
+      CHANNEL: nightly
+
+# Install Rust and Cargo
+# (Based on from https://github.com/rust-lang/libc/blob/master/appveyor.yml)
+install:
+  - ps: Start-FileDownload "https://static.rust-lang.org/dist/channel-rust-stable"
+  - ps: $env:RUST_VERSION = Get-Content channel-rust-stable | select -first 1 | %{$_.split('-')[1]}
+  - if NOT "%CHANNEL%" == "stable" set RUST_VERSION=%CHANNEL%
+  - ps: Start-FileDownload "https://static.rust-lang.org/dist/rust-${env:RUST_VERSION}-${env:TARGET}.exe"
+  - rust-%RUST_VERSION%-%TARGET%.exe /VERYSILENT /NORESTART /DIR="C:\Program Files (x86)\Rust"
+  - SET PATH=%PATH%;C:\Program Files (x86)\Rust\bin
+  - if "%TARGET%" == "i686-pc-windows-gnu" set PATH=%PATH%;C:\msys64\mingw32\bin
+  - if "%TARGET%" == "x86_64-pc-windows-gnu" set PATH=%PATH%;C:\msys64\mingw64\bin
+  - rustc -V
+  - cargo -V
+
+# ???
+build: false
+
+# Equivalent to Travis' `script` phase
+# TODO modify this phase as you see fit
+test_script:
+  - cargo test
+
+artifacts:
+  # Archive the generated packages in the ci.appveyor.com build report.
+  - path: staging
+
+before_deploy:
+  # Generate artifacts for release
+  # build artifacts for generating a .def, needed by the MinGW Python build
+  - cargo rustc --release -- -C link-args=-Wl,--out-implib,polylabel.a
+  - dlltool -z target\release\polylabel.def --export-all-symbols target\release\polylabel.dll
+  - ps: ls target\release
+  - mkdir staging
+  # TODO update this part to copy the artifacts that make sense for your project
+  - copy target\release\polylabel* staging
+  - cd staging
+    # release zipfile will look like 'rust-everywhere-v1.2.3-x86_64-pc-windows-msvc'
+  - 7z a ../%PROJECT_NAME%-%APPVEYOR_REPO_TAG_NAME%-%TARGET%.zip *
+  - appveyor PushArtifact ../%PROJECT_NAME%-%APPVEYOR_REPO_TAG_NAME%-%TARGET%.zip
+
+deploy:
+  appveyor_repo_tag: true
+  tag: $(APPVEYOR_REPO_TAG_NAME)
+  release: $(APPVEYOR_REPO_TAG_NAME)
+  description: 'Binaries'
+  provider: GitHub
+  auth_token:
+    secure: mJlu7lwGqi3BVMm8IyWdRrzhmHqTSCMz0LacJUovMrq6MdHrAiHqkts3fS1EuoD0
+  artifact: /.*\.zip/
+  draft: false
+  prerelease: false
+  on:
+    appveyor_repo_tag: true
+    CHANNEL: stable
+
+branches:
+  only:
+    - master
+    - /v\d\.\d\.\d/

@@ -1,0 +1,166 @@
+language: rust
+cache: cargo
+services:
+  - docker
+addons:
+  apt:
+    packages:
+      - libcurl4-openssl-dev
+      - libelf-dev
+      - libdw-dev
+      - binutils-dev
+env:
+  global:
+    # This will be part of the release tarball
+    # TODO change the project name
+    - PROJECT_NAME=polylabel-rs
+    # TODO comment out this variable if you don't want to build .deb packages on all the targets.
+    # - MAKE_DEB=yes
+    # TODO update these two variables. They are part of the .deb package metadata
+    - DEB_MAINTAINER="Stephan Hügel <urschrei@gmail.com>"
+    - DEB_DESCRIPTION=""
+    - TRAVIS_CARGO_NIGHTLY_FEATURE=""
+    - DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
+    # GH_TOKEN
+    - secure: VNjinuYqP04K4KI/al8hnCqnXbVw9/WxDftOhapWfxL48VnrfKbOsttG3WchCpEebZH1uJ89p5Wv8232RvK5+iiNYtM2m0HQ1vX70HCXNeWeDPluOj8np4NpFSuqb54vmRyhPiG4noCscXe5EhaG0BJCasABMsYAd51r9dnwmwkpWy4s/hp8ewJIEdoHkRav8qv5v7av/h8YJ0ccBs9umppXVov4pNYe270MOO2zkQ8Lt+7n3ClrUxSgMCDVuyOgkhVbDZZL1fdxQCMSatUq6UsJNHv5T3KLF9gwIPKPtxdbLRiZONPiMbdLvXeGnAvxU+0sX05hOEg5T7Q03kExGGl0/d/NDeF0xSt73+b78IjIqHglRbrRwnn2ZGqF9mvzCrZ1QqcXEHOxQClUXy9+9C3xCU5R6HZpcisZIGYx25aROhNyj4/JQU0K4y0Zi2W6FFKHyq01MJideRk9bLRrZlb4usbb5/kGfEJnIG/5bB6ZMW+3QqEBMo3e3kiDgke3cdEHZohpMmkOiadr6WYYuP13/LHK4ZATSaND/Y91znhZAVl1zyO22R0XLpLudGF+zSG5ToXoEVk2jLkL9mn04leDRlxOgtGLlkI9CuKNw6evwQk4LMbuHFMusegcf2PL0ZibYcYrrKoQy/7iTjPY2WHplEW20mcV7Tcu45u0F3A=
+
+
+# AFAICT There are a few ways to set up the build jobs. This one is not the DRYest but I feel is the
+# easiest to reason about.
+# TODO Feel free to remove the channels/targets you don't need
+# NOTE Make *sure* you don't remove a reference (&foo) if you are going to dereference it (*foo)
+matrix:
+  include:
+    # Stable channel
+    # - os: osx
+    #   rust: stable
+    #   env: TARGET=i686-apple-darwin
+    # - os: linux
+    #   rust: stable
+    #   env: TARGET=i686-unknown-linux-gnu
+    #   addons:
+    #     apt:
+    #       packages: &i686_unknown_linux_gnu
+    #         # Cross compiler and cross compiled C libraries
+    #         - gcc-multilib
+
+    ###############################
+    - os: osx
+      osx_image: xcode7.3
+      rust: stable
+      env: TARGET=x86_64-apple-darwin
+    - os: linux
+      rust: stable
+      env: TARGET=x86_64-unknown-linux-gnu
+      services: docker
+    # Beta channel
+    # - os: osx
+    #   rust: beta
+    #   env: TARGET=i686-apple-darwin
+    # - os: linux
+    #   rust: beta
+    #   env: TARGET=i686-unknown-linux-gnu
+    #   addons:
+    #     apt:
+    #       packages: *i686_unknown_linux_gnu
+    ############################
+    - os: osx
+      rust: beta
+      osx_image: xcode7.3
+      env: TARGET=x86_64-apple-darwin
+    - os: linux
+      rust: beta
+      env: TARGET=x86_64-unknown-linux-gnu
+
+
+    # Nightly channel
+    # - os: osx
+    #   rust: nightly
+    #   env: TARGET=i686-apple-darwin
+    # - os: linux
+    #   rust: nightly
+    #   env: TARGET=i686-unknown-linux-gnu
+    #   addons:
+    #     apt:
+    #       packages: *i686_unknown_linux_gnu
+
+    ############
+    - os: osx
+      osx_image: xcode7.3
+      rust: nightly
+      env: TARGET=x86_64-apple-darwin
+    - os: linux
+      rust: nightly
+      env: TARGET=x86_64-unknown-linux-gnu
+
+  allow_failures:
+    # Target `i686-unknown-linux-musl` is currently only available on the nightly channel
+    - os: linux
+      rust: stable
+      env: TARGET=i686-unknown-linux-musl
+    - os: linux
+      rust: beta
+      env: TARGET=i686-unknown-linux-musl
+
+before_install:
+  - bash ci/preinstall.sh
+  - export PATH="$PATH:$HOME/.cargo/bin"
+
+before_script: |
+  PKGNAME="${TRAVIS_REPO_SLUG}" # must match with cargo.toml
+  LOCAL="~/.local" # install here to avoid `sudo`
+  pip install travis-cargo --user &&
+  export PATH=$HOME/.local/bin:$PATH
+
+install:
+  - echo $TRAVIS_RUST_VERSION
+  - bash ci/install.sh
+
+script:
+  - bash ci/script.sh
+
+after_success:
+  - travis-cargo --only stable doc
+  - travis-cargo --only stable doc-upload
+  - travis-cargo coveralls --no-sudo --verify
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./kcov/build/src/kcov --verify --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/polylabel-*; fi
+  - if [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then docker pull $DOCKER_IMAGE; fi
+
+before_deploy:
+  - if ! [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then bash ci/before_deploy.sh; fi
+  - if [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then sudo docker run -e TRAVIS_TAG="$TRAVIS_TAG" --rm -v `pwd`:/io $DOCKER_IMAGE /io/ci/manylinux_rust.sh; fi
+  - sudo chown $USER ${PROJECT_NAME}-${TRAVIS_TAG}-${TARGET}.tar.gz
+  
+deploy:
+  provider: releases
+  # TODO Regenerate this api_key for your project, this one won't work for you. Here's how:
+  # - Go to 'https://github.com/settings/tokens/new' and generate a Token with only the
+  # `public_repo` scope enabled
+  # - Call `travis encrypt $github_token` where $github_token is the token you got in the previous
+  # step and `travis` is the official Travis CI gem (see https://rubygems.org/gems/travis/)
+  # - Enter the "encrypted value" below
+  api_key:
+        - secure: Ow/YGlhzIMhfjwSPVEu7AdJBDGsIq/fQ9/T/YG4QGwXSPS96SghS1872HNkGLEVuudFHbl24Xk7MtDQFeLN5fcQFM1sz3TjqAeHDaBb5YOppMkmcAt3qL0CAxXj9OjHRqv3o80kTsyVl0NCIxxLrJUOIllvG9+Tmsuuaqp3wK0Ijk2voYb16kY9Zx1Ui8jl5N4WuljCK/OwQfOQdvLT9bQFoiHGdxni35JzEGHw7NpALwm6PnLptQWn/DweAHY3lvrHea0brIjLf8hkN49hN120l+LL/wcYcky2NyIvu7UJLbZTOuZgS3BpfZtRCzcTmosejVhfymJcUbSDQbkBRsjDDAx7tcuN/u4EiC0utAyB8T+V3iCMjue0Ndvn+ZFi8h6GVmhi5OgAFYDfTn0yOexn6AihPSjNSXV3jGJ5M3gtT2kauNwRete6LZJK+d2pnzsQJ256nnuknJaJ2/jm9oAT429a/Ewyy+aebxERYYMDqd+Kk8+mCKk2nYGiw4ADJsxanu1bdAjcJ9Og8i1cpITnkFwhREVVGmleLlhkT6ekzrETJSuqA7KeffonlSMSbUV3d8oQHeYGZvnUJnJ+yaobUq2mmdzb1qDv23AdH/1mrf0Y7kNeiaVKBYaikm6MMd/KWQeG4eARZFBbv/lXkuRuSp0OpnIHAlgAAHJciKsM=
+  file_glob: true
+  file: ${PROJECT_NAME}-${TRAVIS_TAG}-${TARGET}.*
+  # don't delete the artifacts from previous phases
+  skip_cleanup: true
+  # deploy when a new tag is pushed
+  on:
+    # channel to use to produce the release artifacts
+    # NOTE make sure you only release *once* per target
+    # TODO you may want to pick a different channel
+    condition: $TRAVIS_RUST_VERSION = stable
+    tags: true
+
+branches:
+  only:
+    # Pushes and PR to the master branch
+    - master
+    # IMPORTANT Ruby regex to match tags. Required, or travis won't trigger deploys when a new tag
+    # is pushed. This regex matches semantic versions like v1.2.3-rc4+2016.02.22
+    - /^v\d+\.\d+\.\d+.*$/
+
+notifications:
+  email:
+    on_success: never
