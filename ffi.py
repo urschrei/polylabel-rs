@@ -36,7 +36,6 @@ from sys import platform
 from ctypes import Structure, POINTER, c_void_p, c_size_t, c_double, cast, cdll
 import numpy as np
 from shapely.geometry import Polygon
-import ipdb
 
 file_path = os.path.dirname(__file__)
 prefix = {'win32': ''}.get(platform, 'lib')
@@ -48,9 +47,13 @@ lib = cdll.LoadLibrary(os.path.join(file_path, "target/release", prefix + "polyl
 class _InnersArray(Structure):
     """
     Convert sequence of float lists to a C-compatible void array
-    example: [[[1.0, 2.0], [3.0, 4.0]], [[5.0, 6.0], [7.0, 8.0]]]
+    example:
+    [
+        [[1.0, 2.0], [3.0, 4.0]],
+        [[5.0, 6.0], [7.0, 8.0]]
+    ]
 
-    Each sequence member is an interior Polygon ring
+    Each sequence is an interior Polygon ring
 
     """
     _fields_ = [("data", c_void_p),
@@ -63,13 +66,12 @@ class _InnersArray(Structure):
 
 
     def __init__(self, seq, data_type = c_double):
-        self.arr = np.asarray([_FFIArray(s) for s in seq])
         ring_array_type = _FFIArray * len(seq)
         ring_array = ring_array_type()
-        for i, arr in enumerate(self.arr):
+        for i, arr in enumerate(np.asarray([_FFIArray(s) for s in seq])):
             ring_array[i] = arr
         self.data = cast(ring_array, c_void_p)
-        self.len = len(self.arr)
+        self.len = len(seq)
 
 class _FFIArray(Structure):
     """
