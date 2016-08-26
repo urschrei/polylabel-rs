@@ -15,7 +15,7 @@ num = "0.1"
 
 [lib]
 name = "polylabel"
-crate-type = ["rlib", "cdylib"]
+crate-type = ["cdylib"]
 test = true
 doctest = false
 doc = true
