@@ -3,20 +3,19 @@
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
-use std::slice;
-
-extern crate libc;
-use self::libc::{c_void, c_double, size_t};
 
 extern crate num;
 use self::num::{Float, FromPrimitive};
 
 extern crate geo;
-use self::geo::{Point, Polygon, LineString};
+use self::geo::{Point, Polygon};
 use self::geo::algorithm::boundingbox::BoundingBox;
 use self::geo::algorithm::distance::Distance;
 use self::geo::algorithm::centroid::Centroid;
 use self::geo::algorithm::contains::Contains;
+
+mod ffi;
+pub use ffi::{polylabel_ffi, Array, WrapperArray};
 
 // A helper struct for `polylabel`
 #[derive(PartialEq, Debug)]
@@ -110,64 +109,6 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
     });
 }
 
-/// Wrapper for a void pointer to a sequence of Arrays
-/// Used for inner rings
-#[repr(C)]
-pub struct WrapperArray {
-    pub data: *const Array,
-    pub len: size_t,
-}
-
-/// Outer polygon rings
-///
-/// Can be:
-///
-/// - `Vec<[c_double; 2]>` (exterior ring)
-/// - `Vec<Vec<[c_double: 2]>>` (interior rings)
-#[repr(C)]
-pub struct Array {
-    pub data: *const c_void,
-    pub len: size_t,
-}
-
-/// Optimum Polygon label position
-#[repr(C)]
-pub struct Position {
-    pub x_pos: c_double,
-    pub y_pos: c_double,
-}
-
-// convert a Polylabel result Point into values that can be sent across the FFI boundary
-impl<T> From<Point<T>> for Position
-    where T: Float
-{
-    fn from(point: Point<T>) -> Position {
-        Position {
-            x_pos: point.x().to_f64().unwrap() as c_double,
-            y_pos: point.y().to_f64().unwrap() as c_double,
-        }
-    }
-}
-
-/// FFI access to the [`polylabel`](fn.polylabel.html) function
-///
-/// Accepts three arguments: an exterior ring [`Array`](struct.Array.html), an interior rings [`Array`](struct.Array.html), and a tolerance.
-#[no_mangle]
-pub extern "C" fn polylabel_ffi(outer: Array,
-                                inners: WrapperArray,
-                                tolerance: c_double)
-                                -> Position {
-    let exterior: Vec<[f64; 2]> =
-        unsafe { slice::from_raw_parts(outer.data as *mut [c_double; 2], outer.len).to_vec() };
-    let interior: Vec<Vec<[f64; 2]>> = reconstitute2(inners);
-    let ls_ext = LineString(exterior.iter().map(|e| Point::new(e[0], e[1])).collect());
-    let ls_int: Vec<LineString<c_double>> = interior.iter()
-        .map(|vec| LineString(vec.iter().map(|e| Point::new(e[0], e[1])).collect()))
-        .collect();
-
-    let poly = Polygon(ls_ext, ls_int);
-    polylabel(&poly, &tolerance).into()
-}
 
 /// Calculate a Polygon's ideal label position by calculating its ✨pole of inaccessibility✨
 ///
@@ -263,54 +204,14 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     Point::new(best_cell.x, best_cell.y)
 }
 
-fn reconstitute(arr: &Array) -> Vec<[f64; 2]> {
-    unsafe { slice::from_raw_parts(arr.data as *mut [f64; 2], arr.len).to_vec() }
-}
-
-fn reconstitute2(arr: WrapperArray) -> Vec<Vec<[f64; 2]>> {
-    let arrays = unsafe { slice::from_raw_parts(arr.data as *mut Array, arr.len) };
-    arrays.into_iter().map(|x| reconstitute(x)).collect()
-}
-
 #[cfg(test)]
 mod tests {
     use std::collections::BinaryHeap;
-    use std::mem;
-    use super::{polylabel, Cell, Array, WrapperArray, reconstitute2};
+    use super::{polylabel, Cell};
     extern crate libc;
-    use self::libc::{c_void, size_t};
     extern crate geo;
     use geo::{Point, Polygon, LineString};
     use geo::contains::Contains;
-
-    // Only used for testing
-    fn gen_array(v: Vec<[f64; 2]>) -> Array {
-        let array = Array {
-            data: v.as_ptr() as *const c_void,
-            len: v.len() as size_t,
-        };
-        mem::forget(v);
-        array
-    }
-    // only used for testing
-    fn gen_wrapperarray(v: Vec<Vec<[f64; 2]>>) -> WrapperArray {
-        let converted: Vec<Array> = v.into_iter().map(|x| gen_array(x)).collect();
-        let array2 = WrapperArray {
-            data: converted.as_ptr() as *const Array,
-            len: converted.len() as size_t,
-        };
-        mem::forget(converted);
-        array2
-    }
-    #[test]
-    fn test_array() {
-        let i_a = vec![[0.5, 0.5], [1.0, 1.0], [1.5, 0.5]];
-        let i_b = vec![[0.55, 0.55], [0.8, 0.8], [1.2, 0.55]];
-        let inners = vec![i_a, i_b];
-        let array = gen_wrapperarray(inners);
-        let rec_inners = reconstitute2(array);
-        assert_eq!(rec_inners[0][2], [1.5, 0.5])
-    }
     #[test]
     // polygons are those used in Shapely's tests
     fn test_polylabel() {
