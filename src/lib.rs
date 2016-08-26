@@ -53,83 +53,20 @@ impl<T> PartialOrd for Cell<T>
 }
 impl<T> Eq for Cell<T> where T: Float {}
 
-
-// We're going to use this struct as input for a minimum priority queue
-// We need this for efficient point-to-polygon distance
-#[derive(PartialEq, Debug)]
-struct Mindist<T>
-    where T: Float
-{
-    distance: T, // Distance from cell centroid to polygon
-}
-// These impls give us a min-heap when used with BinaryHeap
-impl<T> Ord for Mindist<T>
-    where T: Float
-{
-    fn cmp(&self, other: &Mindist<T>) -> std::cmp::Ordering {
-        other.distance.partial_cmp(&self.distance).unwrap()
-    }
-}
-impl<T> PartialOrd for Mindist<T>
-    where T: Float
-{
-    fn partial_cmp(&self, other: &Mindist<T>) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-impl<T> Eq for Mindist<T> where T: Float {}
-
 // Signed distance from a Cell's centroid to a Polygon's outline
 // Returned value is negative if the point is outside the polygon's exterior ring
 fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
     where T: Float
 {
-    let inside = polygon.contains(&Point::new(*x, *y));
-    // FIXME: use LineString distance when it lands in rust-geo
-    // Polygon distance might return 0.0 if the point is contained or on a boundary
-    let distance = point_polygon_distance(x, y, polygon);
+    let point = Point::new(*x, *y);
+    let inside = polygon.contains(&point);
+    // Use LineString distance, because Polygon distance returns 0.0 for inside
+    let distance = point.distance(&polygon.0);
     if inside {
         distance
     } else {
         -distance
     }
-}
-
-// Minimum distance from a Point to a Polygon
-fn point_polygon_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
-    where T: Float
-{
-    // minimum priority queue
-    let mut dist_queue: BinaryHeap<Mindist<T>> = BinaryHeap::new();
-    // get exterior ring
-    let exterior = &polygon.0;
-    // exterior ring as a LineString
-    let ext_ring = &exterior.0;
-    for chunk in ext_ring.windows(2) {
-        let dist = pld(&Point::new(*x, *y), &chunk[0], &chunk[1]);
-        dist_queue.push(Mindist { distance: dist });
-    }
-    dist_queue.pop().unwrap().distance
-}
-
-// Return minimum distance between a Point and a Line segment
-// adapted from http://stackoverflow.com/a/1501725/416626
-fn pld<T>(point: &Point<T>, start: &Point<T>, end: &Point<T>) -> T
-    where T: Float + ToPrimitive
-{
-    let dist_squared = pow(start.distance(end), 2);
-    // Implies that start == end
-    if dist_squared == T::zero() {
-        return pow(point.distance(start), 2);
-    }
-    // Consider the line extending the segment, parameterized as start + t (end - start)
-    // We find the projection of the point onto the line
-    // This falls where t = [(point - start) . (end - start)] / |end - start|^2, where . is the dot product
-    // We clamp t from [0.0, 1.0] to handle points outside the segment start, end
-    let t = T::zero().max(T::one().min((*point - *start).dot(&(*end - *start)) / dist_squared));
-    let projected = Point::new(start.x() + t * (end.x() - start.x()),
-                               start.y() + t * (end.y() - start.y()));
-    point.distance(&projected)
 }
 
 // Add a new quadtree node to the minimum priority queue
@@ -359,7 +296,7 @@ fn reconstitute2(arr: WrapperArray) -> Vec<Vec<[f64; 2]>> {
 #[cfg(test)]
 mod tests {
     use std::collections::BinaryHeap;
-    use super::{polylabel, point_polygon_distance, pld, Cell, Mindist, gen_array2, reconstitute2};
+    use super::{polylabel, Cell, gen_array2, reconstitute2};
     extern crate geo;
     use geo::{Point, Polygon, LineString};
     use geo::contains::Contains;
@@ -608,54 +545,6 @@ mod tests {
         assert_eq!(res, Point::new(0.5625, 0.5625));
     }
     #[test]
-    fn polygon_distance_test() {
-        let coords = vec![(5., 1.), (4., 2.), (4., 3.), (5., 4.), (6., 4.), (7., 3.), (7., 2.),
-                          (6., 1.)];
-        let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
-        let poly = Polygon(ls, vec![]);
-        let dist = point_polygon_distance(&0.0, &8.0, &poly);
-        // result from Shapely
-        assert_eq!(dist, 6.363961030678928);
-
-    }
-    #[test]
-    // Point to Polygon, inside point
-    fn polygon_distance_inside_test() {
-        // an octagon
-        let points = vec![(5., 1.), (4., 2.), (4., 3.), (5., 4.), (6., 4.), (7., 3.), (7., 2.),
-                          (6., 1.), (5., 1.)];
-        let ls = LineString(points.iter().map(|e| Point::new(e.0, e.1)).collect());
-        let poly = Polygon(ls, vec![]);
-        // A Random point inside the octagon
-        let dist = point_polygon_distance(&5.5, &2.1, &poly);
-        assert_eq!(dist, 1.1);
-    }
-    #[test]
-    fn point_line_distance_test() {
-        let o1 = Point::new(8.0, 0.0);
-        let o2 = Point::new(5.5, 0.0);
-        let o3 = Point::new(5.0, 0.0);
-        let o4 = Point::new(4.5, 1.5);
-        let o5 = Point::new(3.5, 2.5);
-
-        let p1 = Point::new(7.2, 2.0);
-        let p2 = Point::new(6.0, 1.0);
-        let p3 = Point::new(4.4, 2.0);
-        let p4 = Point::new(2.6, 2.0);
-
-        let dist = pld(&o1, &p1, &p2);
-        let dist2 = pld(&o2, &p1, &p2);
-        let dist3 = pld(&o3, &p1, &p2);
-        let dist4 = pld(&o4, &p1, &p2);
-        let dist5 = pld(&o5, &p3, &p4);
-        // Results agrees with Shapely
-        assert_eq!(dist, 2.048590078926335);
-        assert_eq!(dist2, 1.118033988749895);
-        assert_eq!(dist3, 1.4142135623730951);
-        assert_eq!(dist4, 1.5811388300841898);
-        assert_eq!(dist5, 0.5);
-    }
-    #[test]
     // Is our minimum priority queue behaving as it should?
     fn test_queue() {
         let a = Cell {
@@ -687,20 +576,5 @@ mod tests {
         assert_eq!(q.pop().unwrap().max_distance, 7.0);
         assert_eq!(q.pop().unwrap().max_distance, 8.0);
         assert_eq!(q.pop().unwrap().max_distance, 9.0);
-    }
-    #[test]
-    // Is our minimum distance queue behaving as it should?
-    fn test_dist_queue() {
-        let a = Mindist { distance: 5.14 };
-        let b = Mindist { distance: 5.0 };
-        let c = Mindist { distance: 6.0 };
-        let mut v = vec![];
-        v.push(a);
-        v.push(b);
-        v.push(c);
-        let mut q = BinaryHeap::from(v);
-        assert_eq!(q.pop().unwrap().distance, 5.0);
-        assert_eq!(q.pop().unwrap().distance, 5.14);
-        assert_eq!(q.pop().unwrap().distance, 6.0);
     }
 }
