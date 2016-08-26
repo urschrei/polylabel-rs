@@ -8,7 +8,7 @@ use super::geo::{Point, Polygon, LineString};
 use super::polylabel;
 use super::num::{Float};
 
-/// Wrapper for a void pointer to a sequence of Arrays  
+/// Wrapper for a void pointer to a sequence of [`Array`](struct.Array.html)s, and the sequence length
 /// 
 /// Used for inner Polygon rings
 #[repr(C)]
@@ -17,12 +17,9 @@ pub struct WrapperArray {
     pub len: size_t,
 }
 
-/// Outer polygon rings
+/// Wrapper for a void pointer to a sequence of 2-element arrays representing points, and the sequence length
 ///
-/// Can be:
-///
-/// - `Vec<[c_double; 2]>` (exterior ring)
-/// - `Vec<Vec<[c_double: 2]>>` (interior rings)
+/// Used for outer Polygon rings. `data` is a `Vec<[c_double; 2]>`
 #[repr(C)]
 pub struct Array {
     pub data: *const c_void,
