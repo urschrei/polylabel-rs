@@ -34,5 +34,6 @@ The function returns a struct with two `c_double` fields:
 - `x_pos`
 - `y_pos`
 
+A Python example is available in [`ffi.py`](ffi.py)
 # License
 [MIT](license.txt)
