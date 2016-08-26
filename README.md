@@ -28,7 +28,7 @@ let label_pos = polylabel(&poly, &0.10);
 Call `polylabel_ffi` with:
 - `Array` (exterior Polygon ring)
 - `WrapperArray` (interior Polygon rings)
-- `tolerance` a `c_float`
+- `tolerance`, a `c_float`
 
 The function returns a struct with two `c_double` fields:
 - `x_pos`
