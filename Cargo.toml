@@ -4,7 +4,7 @@ version = "0.1.1"
 authors = ["Stephan Hügel <urschrei@gmail.com>"]
 description = "A Rust implementation of the Polylabel algorithm"
 readme = "README.md"
-keywords = ["geo"]
+keywords = ["geo", "polylabel"]
 repository = "https://github.com/urschrei/polylabel-rs"
 license = "MIT"
 
