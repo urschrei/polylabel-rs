@@ -1,6 +1,6 @@
 [package]
 name = "polylabel"
-version = "0.1.2"
+version = "0.1.4"
 authors = ["Stephan Hügel <urschrei@gmail.com>"]
 description = "A Rust implementation of the Polylabel algorithm"
 readme = "README.md"
@@ -15,7 +15,7 @@ num = "0.1"
 
 [lib]
 name = "polylabel"
-crate-type = ["cdylib"]
+crate-type = ["rlib", "dylib"]
 test = true
 doctest = false
 doc = true
