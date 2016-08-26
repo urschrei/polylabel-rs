@@ -35,6 +35,7 @@ import os
 from sys import platform
 from ctypes import Structure, POINTER, c_void_p, c_size_t, c_double, cast, cdll
 import numpy as np
+from shapely.geometry import Polygon
 import ipdb
 
 file_path = os.path.dirname(__file__)
@@ -101,15 +102,34 @@ def _unpack_coordresult(res, _func, _args):
     """ return our coordinates in a sensible format (a tuple) """
     return res.x_pos, res.y_pos
 
-labelpos = lib.polylabel_ffi
-labelpos.argtypes = (_FFIArray, _InnersArray, c_double)
-labelpos.restype = _CoordResult
-labelpos.errcheck = _unpack_coordresult
+
+_labelpos = lib.polylabel_ffi
+_labelpos.argtypes = (_FFIArray, _InnersArray, c_double)
+_labelpos.restype = _CoordResult
+_labelpos.errcheck = _unpack_coordresult
+
+
+def label_position(ext, interiors=None, tolerance=1.0):
+    """
+    Calculate the optimum label position within a Polygon
+    You may pass either a Shapely Polygon and a tolerance, or
+    an exterior ring (list), a list of interior rings (list), and a tolerance
+
+    Accepts Polygon instances as well as lists and lists of lists
+    This is a terrible interface, but y'know, dynamic languages
+
+    """
+    if isinstance(ext, Polygon):
+        _ext = list(ext.exterior.coords)
+        _interiors = [list(ring.coords) for ring in ext.interiors]
+        return _labelpos(_ext, _interiors, tolerance)
+    else:
+        return _labelpos(ext, interiors, tolerance)
 
 
 if __name__ == "__main__":
     # test that everything's working
-    res = (labelpos(
+    res = label_position(
         [[4.0, 1.0],
          [5.0, 2.0],
          [5.0, 3.0],
@@ -119,10 +139,24 @@ if __name__ == "__main__":
          [2.0, 2.0],
          [3.0, 1.0],
          [4.0, 1.0]],
-        [
+        interiors=[
             [[3.5, 3.5], [4.4, 2.0], [2.6, 2.0], [3.5, 3.5]],
             [[4.0, 3.0], [4.0, 3.2], [4.5, 3.2], [4.0, 3.0]]
         ],
-        0.1)
-    )
+        tolerance=0.1)
     print(res)
+    pol = Polygon(
+        [(4.0, 1.0),
+         (5.0, 2.0),
+         (5.0, 3.0),
+         (4.0, 4.0),
+         (3.0, 4.0),
+         (2.0, 3.0),
+         (2.0, 2.0),
+         (3.0, 1.0),
+         (4.0, 1.0)],
+        [
+         [(3.5, 3.5), (4.4, 2.0), (2.6, 2.0), (3.5, 3.5)],
+         [(4.0, 3.0), (4.0, 3.2), (4.5, 3.2), (4.0, 3.0)]
+        ])
+    print label_position(pol, tolerance=0.1)
