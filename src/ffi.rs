@@ -6,10 +6,10 @@ use self::libc::{c_void, c_double, size_t};
 use super::geo::{Point, Polygon, LineString};
 
 use super::polylabel;
-use super::num::{Float};
+use super::num::Float;
 
 /// Wrapper for a void pointer to a sequence of [`Array`](struct.Array.html)s, and the sequence length
-/// 
+///
 /// Used for inner Polygon rings
 #[repr(C)]
 pub struct WrapperArray {
