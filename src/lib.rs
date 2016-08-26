@@ -4,14 +4,12 @@
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::slice;
-use std::mem;
 
 extern crate libc;
 use self::libc::{c_void, c_double, size_t};
 
 extern crate num;
-use self::num::{Float, FromPrimitive, ToPrimitive};
-use self::num::pow::pow;
+use self::num::{Float, FromPrimitive};
 
 extern crate geo;
 use self::geo::{Point, Polygon, LineString};
@@ -265,25 +263,6 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     Point::new(best_cell.x, best_cell.y)
 }
 
-fn gen_array(v: Vec<[f64; 2]>) -> Array {
-    let array = Array {
-        data: v.as_ptr() as *const c_void,
-        len: v.len() as size_t,
-    };
-    mem::forget(v);
-    array
-}
-
-fn gen_array2(v: Vec<Vec<[f64; 2]>>) -> WrapperArray {
-    let converted: Vec<Array> = v.into_iter().map(|x| gen_array(x)).collect();
-    let array2 = WrapperArray {
-        data: converted.as_ptr() as *const Array,
-        len: converted.len() as size_t,
-    };
-    mem::forget(converted);
-    array2
-}
-
 fn reconstitute(arr: &Array) -> Vec<[f64; 2]> {
     unsafe { slice::from_raw_parts(arr.data as *mut [f64; 2], arr.len).to_vec() }
 }
@@ -296,16 +275,39 @@ fn reconstitute2(arr: WrapperArray) -> Vec<Vec<[f64; 2]>> {
 #[cfg(test)]
 mod tests {
     use std::collections::BinaryHeap;
-    use super::{polylabel, Cell, gen_array2, reconstitute2};
+    use std::mem;
+    use super::{polylabel, Cell, Array, WrapperArray, reconstitute2};
+    extern crate libc;
+    use self::libc::{c_void, size_t};
     extern crate geo;
     use geo::{Point, Polygon, LineString};
     use geo::contains::Contains;
+
+    // Only used for testing
+    fn gen_array(v: Vec<[f64; 2]>) -> Array {
+        let array = Array {
+            data: v.as_ptr() as *const c_void,
+            len: v.len() as size_t,
+        };
+        mem::forget(v);
+        array
+    }
+    // only used for testing
+    fn gen_wrapperarray(v: Vec<Vec<[f64; 2]>>) -> WrapperArray {
+        let converted: Vec<Array> = v.into_iter().map(|x| gen_array(x)).collect();
+        let array2 = WrapperArray {
+            data: converted.as_ptr() as *const Array,
+            len: converted.len() as size_t,
+        };
+        mem::forget(converted);
+        array2
+    }
     #[test]
     fn test_array() {
         let i_a = vec![[0.5, 0.5], [1.0, 1.0], [1.5, 0.5]];
         let i_b = vec![[0.55, 0.55], [0.8, 0.8], [1.2, 0.55]];
         let inners = vec![i_a, i_b];
-        let array = gen_array2(inners);
+        let array = gen_wrapperarray(inners);
         let rec_inners = reconstitute2(array);
         assert_eq!(rec_inners[0][2], [1.5, 0.5])
     }
