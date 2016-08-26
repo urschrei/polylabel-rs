@@ -22,7 +22,7 @@ let poly = Polygon(ls, vec![]);
 let label_pos = polylabel(&poly, &0.10);
 // Point(0.5625, 0.5625)
 ```
-<img src="https://cdn.rawgit.com/urschrei/polylabel-rs/5ab07d193f61bb0e16338a6d19a08ba32f153ddb/ell.svg"/>
+<img src="https://cdn.rawgit.com/urschrei/polylabel-rs/7a07336e85572eb5faaf0657c2383d7de5620cd8/ell.svg"/>
 
 # FFI
 Call `polylabel_ffi` with:
