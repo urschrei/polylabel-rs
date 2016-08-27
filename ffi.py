@@ -131,34 +131,23 @@ def label_position(ext, interiors=None, tolerance=1.0):
 
 if __name__ == "__main__":
     # test that everything's working
-    res = label_position(
-        [[4.0, 1.0],
-         [5.0, 2.0],
-         [5.0, 3.0],
-         [4.0, 4.0],
-         [3.0, 4.0],
-         [2.0, 3.0],
-         [2.0, 2.0],
-         [3.0, 1.0],
-         [4.0, 1.0]],
-        interiors=[
-            [[3.5, 3.5], [4.4, 2.0], [2.6, 2.0], [3.5, 3.5]],
-            [[4.0, 3.0], [4.0, 3.2], [4.5, 3.2], [4.0, 3.0]]
-        ],
-        tolerance=0.1)
-    print(res)
-    pol = Polygon(
-        [(4.0, 1.0),
-         (5.0, 2.0),
-         (5.0, 3.0),
-         (4.0, 4.0),
-         (3.0, 4.0),
-         (2.0, 3.0),
-         (2.0, 2.0),
-         (3.0, 1.0),
-         (4.0, 1.0)],
-        [
-         [(3.5, 3.5), (4.4, 2.0), (2.6, 2.0), (3.5, 3.5)],
-         [(4.0, 3.0), (4.0, 3.2), (4.5, 3.2), (4.0, 3.0)]
-        ])
-    print label_position(pol, tolerance=0.1)
+
+    exterior = [[4.0, 1.0], [5.0, 2.0], [5.0, 3.0], [4.0, 4.0], [3.0, 4.0], [2.0, 3.0], [2.0, 2.0], [3.0, 1.0], [4.0, 1.0]]
+    interiors = [
+                [[3.5, 3.5], [4.4, 2.0], [2.6, 2.0], [3.5, 3.5]],
+                [[4.0, 3.0], [4.0, 3.2], [4.5, 3.2], [4.0, 3.0]]
+                ]
+    # A square with a large cutout. Needs a much smaller tolerance (< .01)
+    # exterior = [(0, 0), (0, 2), (2, 2), (2, 0), (0, 0)]
+    # interiors = [[(0.2, 0.2), (0.2, 1.8), (1.8, 1.8), (1.8, 0.2), (0.2, 0.2)]]
+
+    res = label_position(exterior, interiors=interiors, tolerance=0.1)
+    if res != (3.5, 2.5):
+        raise ValueError('Polylabel returned an incorrect value: %s, %s' % (res[0], res[1]))
+    print("Manual polygon:", res)
+    # construct a Polygon
+    pol = Polygon(exterior, interiors)
+    polres = label_position(pol, tolerance=0.1)
+    if polres != (3.5, 2.5):
+        raise ValueError('Polylabel returned an incorrect value: %s, %s' % (polres[0], polres[1]))
+    print ("Shapely Polygon:", polres)
