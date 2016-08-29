@@ -69,15 +69,15 @@ pub extern "C" fn polylabel_ffi(outer: Array,
     let ls_int: Vec<LineString<c_double>> = interior.iter()
         .map(|vec| LineString(vec.iter().map(|e| Point::new(e[0], e[1])).collect()))
         .collect();
-
     let poly = Polygon(ls_ext, ls_int);
     polylabel(&poly, &tolerance).into()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{Array, WrapperArray, reconstitute2};
+    use super::{Array, WrapperArray, polylabel_ffi, reconstitute2};
     use super::libc::{c_void, size_t};
+    use geo::Point;
     use std::mem;
 
     // Only used for testing
@@ -107,6 +107,19 @@ mod tests {
         let array = gen_wrapperarray(inners);
         let rec_inners = reconstitute2(array);
         assert_eq!(rec_inners[0][2], [1.5, 0.5])
+    }
+    #[test]
+    fn test_ffi() {
+        let ext_vec = vec![[4.0, 1.0], [5.0, 2.0], [5.0, 3.0], [4.0, 4.0], [3.0, 4.0], [2.0, 3.0],
+                           [2.0, 2.0], [3.0, 1.0], [4.0, 1.0]];
+        let int_vec = vec![vec![[3.5, 3.5], [4.4, 2.0], [2.6, 2.0], [3.5, 3.5]],
+                           vec![[4.0, 3.0], [4.0, 3.2], [4.5, 3.2], [4.0, 3.0]]];
+
+        let outer = gen_array(ext_vec);
+        let inners = gen_wrapperarray(int_vec);
+        let res = polylabel_ffi(outer, inners, 0.1);
+        let res_point = Point::new(res.x_pos, res.y_pos);
+        assert_eq!(res_point, Point::new(3.125, 2.875));
     }
 
 }
