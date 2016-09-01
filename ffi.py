@@ -68,7 +68,7 @@ class _InnersArray(Structure):
     def __init__(self, seq, data_type = c_double):
         ring_array_type = _FFIArray * len(seq)
         ring_array = ring_array_type()
-        for i, arr in enumerate(np.asarray([_FFIArray(s) for s in seq])):
+        for i, arr in enumerate([_FFIArray(s) for s in seq]):
             ring_array[i] = arr
         self.data = cast(ring_array, c_void_p)
         self.len = len(seq)
@@ -89,11 +89,13 @@ class _FFIArray(Structure):
         return seq if isinstance(seq, cls) else cls(seq)
 
     def __init__(self, seq, data_type = c_double):
+        array = np.array(seq, dtype=np.float64)
+        self._buffer = array.data
         self.data = cast(
-            np.array(seq, dtype=np.float64).ctypes.data_as(POINTER(data_type)),
+            array.ctypes.data_as(POINTER(c_double)),
             c_void_p
         )
-        self.len = len(seq)
+        self.len = len(array)
 
 class _CoordResult(Structure):
     """ Container for returned FFI coordinate data """
@@ -134,20 +136,17 @@ if __name__ == "__main__":
 
     exterior = [[4.0, 1.0], [5.0, 2.0], [5.0, 3.0], [4.0, 4.0], [3.0, 4.0], [2.0, 3.0], [2.0, 2.0], [3.0, 1.0], [4.0, 1.0]]
     interiors = [
-                [[3.5, 3.5], [4.4, 2.0], [2.6, 2.0], [3.5, 3.5]],
-                [[4.0, 3.0], [4.0, 3.2], [4.5, 3.2], [4.0, 3.0]]
+                    [[3.5, 3.5], [4.4, 2.0], [2.6, 2.0], [3.5, 3.5]],
+                    [[4.0, 3.0], [4.0, 3.2], [4.5, 3.2], [4.0, 3.0]],
                 ]
-    # A square with a large cutout. Needs a much smaller tolerance (< .01)
-    # exterior = [(0, 0), (0, 2), (2, 2), (2, 0), (0, 0)]
-    # interiors = [[(0.2, 0.2), (0.2, 1.8), (1.8, 1.8), (1.8, 0.2), (0.2, 0.2)]]
 
     res = label_position(exterior, interiors=interiors, tolerance=0.1)
-    if res != (3.5, 2.5):
+    if res != (3.125, 2.875):
         raise ValueError('Polylabel returned an incorrect value: %s, %s' % (res[0], res[1]))
     print("Manual polygon:", res)
     # construct a Polygon
     pol = Polygon(exterior, interiors)
     polres = label_position(pol, tolerance=0.1)
-    if polres != (3.5, 2.5):
+    if polres != (3.125, 2.875):
         raise ValueError('Polylabel returned an incorrect value: %s, %s' % (polres[0], polres[1]))
     print ("Shapely Polygon:", polres)
