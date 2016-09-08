@@ -59,11 +59,7 @@ fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
     let inside = polygon.contains(&point);
     // Use LineString distance, because Polygon distance returns 0.0 for inside
     let distance = point.distance(&polygon.0);
-    if inside {
-        distance
-    } else {
-        -distance
-    }
+    if inside { distance } else { -distance }
 }
 
 // Add a new quadtree node to the minimum priority queue
@@ -149,6 +145,8 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     // Initial best cell values
     let centroid = polygon.centroid().unwrap();
     let bbox = polygon.bbox().unwrap();
+    let width = bbox.xmax - bbox.xmin;
+    let height = bbox.ymax - bbox.ymin;
     let cell_size = (bbox.xmax - bbox.xmin).min(bbox.ymax - bbox.ymin);
     let mut h: T = cell_size / two;
     let distance: T = signed_distance(&centroid.x(), &centroid.y(), polygon);
@@ -161,6 +159,21 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         distance: distance,
         max_distance: max_distance,
     };
+
+    // special case for rectangular polygons
+    let bbox_cell_dist = signed_distance(&(bbox.xmin + width / two), &(bbox.ymin + height / two), polygon);
+    let bbox_cell = Cell {
+        x: bbox.xmin + width / two,
+        y: bbox.ymin + height / two,
+        h: T::zero(),
+        distance: bbox_cell_dist,
+        max_distance: bbox_cell_dist + T::zero() * two.sqrt(),
+    };
+
+    if bbox_cell.distance > best_cell.distance {
+        best_cell = bbox_cell;
+    }
+
     // Minimum priority queue
     let mut cell_queue: BinaryHeap<Cell<T>> = BinaryHeap::new();
     // Build an initial quadtree node, which covers the Polygon
