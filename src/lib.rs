@@ -161,7 +161,9 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     };
 
     // special case for rectangular polygons
-    let bbox_cell_dist = signed_distance(&(bbox.xmin + width / two), &(bbox.ymin + height / two), polygon);
+    let bbox_cell_dist = signed_distance(&(bbox.xmin + width / two),
+                                         &(bbox.ymin + height / two),
+                                         polygon);
     let bbox_cell = Cell {
         x: bbox.xmin + width / two,
         y: bbox.ymin + height / two,
