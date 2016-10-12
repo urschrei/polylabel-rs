@@ -56,7 +56,11 @@ fn reconstitute2(arr: WrapperArray) -> Vec<Vec<[f64; 2]>> {
 
 /// FFI access to the [`polylabel`](fn.polylabel.html) function
 ///
-/// Accepts three arguments: an exterior ring [`Array`](struct.Array.html), an interior rings [`WrapperArray`](struct.WrapperArray.html), and a tolerance `c_float`.
+/// Accepts three arguments:
+///
+/// - an exterior ring [`Array`](struct.Array.html)
+/// - an interior rings [`WrapperArray`](struct.WrapperArray.html)
+/// - a tolerance `c_double`.
 #[no_mangle]
 pub extern "C" fn polylabel_ffi(outer: Array,
                                 inners: WrapperArray,

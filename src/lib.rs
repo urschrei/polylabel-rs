@@ -15,7 +15,7 @@ use self::geo::algorithm::centroid::Centroid;
 use self::geo::algorithm::contains::Contains;
 
 mod ffi;
-pub use ffi::{polylabel_ffi, Array, WrapperArray};
+pub use ffi::{polylabel_ffi, Array, WrapperArray, Position};
 
 // A helper struct for `polylabel`
 #[derive(PartialEq, Debug)]
