@@ -42,5 +42,13 @@ The function returns a struct with two `c_double` fields:
 - `y_pos`
 
 A Python example is available in [`ffi.py`](ffi.py)
+
+# Binaries
+Binary libs for:
+- `x86_64` *nix (built using `manylinux1`, thus easy to include in Python 2.7 / 3.4 wheels) and OS X
+- `i686` and `x86_64` Windows
+
+are available in [releases](releases).
+
 # License
 [MIT](license.txt)
