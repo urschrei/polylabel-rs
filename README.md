@@ -32,9 +32,9 @@ let label_pos = polylabel(&poly, &0.10);
 https://urschrei.github.io/polylabel-rs/polylabel/index.html
 
 # FFI
-Call `polylabel_ffi` with:
-- `Array` (exterior Polygon ring)
-- `WrapperArray` (interior Polygon rings)
+Call `polylabel_ffi` with the following three mandatory arguments:
+- [`Array`](https://docs.rs/polylabel/0.1.6/polylabel/struct.Array.html) (a void pointer to an array of two-element `c_double`s, the exterior Polygon ring)
+- [`WrapperArray`](https://docs.rs/polylabel/0.1.6/polylabel/struct.WrapperArray.html) (a void pointer to an array of `Array`s, the interior Polygon rings, empty if there are none)
 - `tolerance`, a `c_float`
 
 The function returns a struct with two `c_double` fields:
