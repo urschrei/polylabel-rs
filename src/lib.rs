@@ -1,6 +1,7 @@
 #![doc(html_logo_url = "https://cdn.rawgit.com/urschrei/polylabel-rs/7a07336e85572eb5faaf0657c2383d7de5620cd8/ell.svg",
        html_root_url = "https://urschrei.github.io/polylabel-rs/")]
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
+use std::fmt::Debug;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
@@ -11,6 +12,7 @@ extern crate geo;
 use self::geo::{Point, Polygon};
 use self::geo::algorithm::boundingbox::BoundingBox;
 use self::geo::algorithm::distance::Distance;
+use self::geo::algorithm::area::Area;
 use self::geo::algorithm::centroid::Centroid;
 use self::geo::algorithm::contains::Contains;
 
@@ -139,8 +141,19 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
 /// ```
 ///
 pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
-    where T: Float + FromPrimitive
+    where T: Float + FromPrimitive + Debug
 {
+    // special case for degenerate polygons
+    if polygon.area() == T::zero() {
+        // best_cell = Cell {
+        //     x: polygon.exterior.0[0].x(),
+        //     y: polygon.exterior.0[0].y(),
+        //     h: T::zero(),
+        //     distance: distance,
+        //     max_distance: max_distance
+        // };
+        return Point::new(T::zero(), T::zero());
+    }
     let two = T::one() + T::one();
     // Initial best cell values
     let centroid = polygon.centroid().unwrap();
@@ -148,6 +161,10 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     let width = bbox.xmax - bbox.xmin;
     let height = bbox.ymax - bbox.ymin;
     let cell_size = (bbox.xmax - bbox.xmin).min(bbox.ymax - bbox.ymin);
+    // Special case for degenerate polygons
+    if cell_size == T::zero() {
+        return Point::new(bbox.xmin, bbox.ymin);
+    }
     let mut h: T = cell_size / two;
     let distance: T = signed_distance(&centroid.x(), &centroid.y(), polygon);
     let max_distance: T = distance + T::zero() * two.sqrt();
@@ -461,6 +478,22 @@ mod tests {
         let poly = Polygon::new(ls, vec![]);
         let res = polylabel(&poly, &0.10);
         assert_eq!(res, Point::new(0.5625, 0.5625));
+    }
+    #[test]
+    fn degenerate_polygon_test() {
+        let a_coords = vec![(0.0, 0.0), (1.0, 0.0), (2.0, 0.0), (0.0, 0.0)];
+        let a_ls = LineString(a_coords.iter().map(|e| Point::new(e.0, e.1)).collect());
+        let a_poly = Polygon::new(a_ls, vec![]);
+        let a_res = polylabel(&a_poly, &1.0);
+        assert_eq!(a_res, Point::new(0.0, 0.0));
+    }
+    #[test]
+    fn degenerate_polygon_test_2() {
+        let b_coords = vec![(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)];
+        let b_ls = LineString(b_coords.iter().map(|e| Point::new(e.0, e.1)).collect());
+        let b_poly = Polygon::new(b_ls, vec![]);
+        let b_res = polylabel(&b_poly, &1.0);
+        assert_eq!(b_res, Point::new(0.0, 0.0));
     }
     #[test]
     // Is our minimum priority queue behaving as it should?
