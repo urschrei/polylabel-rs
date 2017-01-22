@@ -73,7 +73,7 @@ pub extern "C" fn polylabel_ffi(outer: Array,
     let ls_int: Vec<LineString<c_double>> = interior.iter()
         .map(|vec| LineString(vec.iter().map(|e| Point::new(e[0], e[1])).collect()))
         .collect();
-    let poly = Polygon(ls_ext, ls_int);
+    let poly = Polygon::new(ls_ext, ls_int);
     polylabel(&poly, &tolerance).into()
 }
 

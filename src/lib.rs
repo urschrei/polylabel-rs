@@ -58,7 +58,7 @@ fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
     let point = Point::new(*x, *y);
     let inside = polygon.contains(&point);
     // Use LineString distance, because Polygon distance returns 0.0 for inside
-    let distance = point.distance(&polygon.0);
+    let distance = point.distance(&polygon.exterior);
     if inside { distance } else { -distance }
 }
 
@@ -335,7 +335,7 @@ mod tests {
                           (-150.3871025524086, 66.37789008984335),
                           (-75.57274028771249, 110.01960141091608)];
         let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
-        let poly = Polygon(ls, vec![]);
+        let poly = Polygon::new(ls, vec![]);
         let res = polylabel(&poly, &10.000);
         assert_eq!(res, Point::new(59.35615556364569, 121.83919629746435));
     }
@@ -448,7 +448,7 @@ mod tests {
                           (0.0, -100.0)];
 
         let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
-        let poly = Polygon(ls, vec![]);
+        let poly = Polygon::new(ls, vec![]);
         let res = polylabel(&poly, &1.0);
         assert!(poly.contains(&res));
     }
@@ -458,7 +458,7 @@ mod tests {
         let coords = vec![(0.0, 0.0), (4.0, 0.0), (4.0, 1.0), (1.0, 1.0), (1.0, 4.0), (0.0, 4.0),
                           (0.0, 0.0)];
         let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
-        let poly = Polygon(ls, vec![]);
+        let poly = Polygon::new(ls, vec![]);
         let res = polylabel(&poly, &0.10);
         assert_eq!(res, Point::new(0.5625, 0.5625));
     }
