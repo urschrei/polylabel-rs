@@ -4,6 +4,7 @@
 [![](https://img.shields.io/crates/v/polylabel.svg)](https://crates.io/crates/polylabel)
 # Polylabel-rs
 A Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
+[![GIF](output.gif)]()
 # How to Use
 ```rust
 extern crate polylabel;
@@ -26,7 +27,6 @@ let poly = Polygon(ls, vec![]);
 let label_pos = polylabel(&poly, &0.10);
 // Point(0.5625, 0.5625)
 ```
-<img src="https://cdn.rawgit.com/urschrei/polylabel-rs/7a07336e85572eb5faaf0657c2383d7de5620cd8/ell.svg"/>
 
 ## Documentation
 https://urschrei.github.io/polylabel-rs/polylabel/index.html
