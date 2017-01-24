@@ -4,7 +4,10 @@
 [![](https://img.shields.io/crates/v/polylabel.svg)](https://crates.io/crates/polylabel)
 # Polylabel-rs
 A Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
+
+Visualised: The orange dot is the polygon centroid. The teal dot is the ideal label position.
 [![GIF](output.gif)]()
+
 # How to Use
 ```rust
 extern crate polylabel;
@@ -29,7 +32,7 @@ let label_pos = polylabel(&poly, &0.10);
 ```
 
 ## Documentation
-https://urschrei.github.io/polylabel-rs/polylabel/index.html
+https://docs.rs/polylabel
 
 # FFI
 Call `polylabel_ffi` with the following three mandatory arguments:
