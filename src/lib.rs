@@ -160,7 +160,7 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     let bbox = polygon.bbox().unwrap();
     let width = bbox.xmax - bbox.xmin;
     let height = bbox.ymax - bbox.ymin;
-    let cell_size = (bbox.xmax - bbox.xmin).min(bbox.ymax - bbox.ymin);
+    let cell_size = width.min(height);
     // Special case for degenerate polygons
     if cell_size == T::zero() {
         return Point::new(bbox.xmin, bbox.ymin);
