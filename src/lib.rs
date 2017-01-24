@@ -3,7 +3,11 @@
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 //! for finding the optimum position of a polygon label.
 use std::cmp::Ordering;
+use std::fmt::Debug;
 use std::collections::BinaryHeap;
+
+use std::fs::File;
+use std::io::{Write, BufWriter};
 
 extern crate num_traits;
 use self::num_traits::{Float, FromPrimitive, Signed};
@@ -105,14 +109,26 @@ where
     }
 }
 
+fn square_coordinates<T>(midx: &T, midy: &T, h: &T, v: &mut Vec<String>)
+    where T: Float + Debug
+{
+    let minx = *midx - *h;
+    let miny = *midy - *h;
+    let maxx = *midx + *h;
+    let maxy = *midy + *h;
+    v.push(format!("{:?}", &(minx, miny, maxx, maxy)));
+}
+
+
 /// Add a new Quadtree node made up of four `Qcell`s to the binary heap
 fn add_quad<T>(
     mpq: &mut BinaryHeap<Qcell<T>>,
     cell: &Qcell<T>,
     new_height: &T,
     polygon: &Polygon<T>,
+    mut v: &mut Vec<String>
 ) where
-    T: Float + Signed,
+    T: Float + Signed + Debug,
 {
     let two = T::one() + T::one();
     let centroid_x = cell.centroid.x();
@@ -131,7 +147,14 @@ fn add_quad<T>(
             new_dist,
             new_dist + *new_height * two.sqrt(),
         ));
+        square_coordinates(&combo.0, &combo.1, new_height, &mut v);
     }
+}
+
+fn write_nodes(nodes: &[String]) -> Result<(), String> {
+    let f = File::create("nodes.txt").map_err(|_| "Unable to create file".to_string())?;
+    let mut bw = BufWriter::new(f);
+    bw.write_all(nodes.join("\n").as_bytes()).map_err(|_| "Unable to write data".to_string())
 }
 
 /// Calculate a Polygon's ideal label position by calculating its ✨pole of inaccessibility✨
@@ -160,15 +183,16 @@ fn add_quad<T>(
 /// // Its centroid lies outside the polygon
 /// assert_eq!(poly.centroid(), Point::new(1.3571428571428572, 1.3571428571428572));
 ///
-/// let label_position = polylabel(&poly, &1.0);
+/// let label_position = polylabel(&poly, &0.1);
 /// // Optimum label position is inside the polygon
 /// assert_eq!(label_position, Point::new(0.5625, 0.5625));
 /// ```
 ///
 pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
 where
-    T: Float + FromPrimitive + Signed,
+    T: Float + FromPrimitive + Signed + Debug,
 {
+    let mut nodes: Vec<String> = vec![];
     // special case for degenerate polygons
     if polygon.area() == T::zero() {
         return Point::new(T::zero(), T::zero());
@@ -221,6 +245,7 @@ where
     while x < bbox.xmax {
         y = bbox.ymin;
         while y < bbox.ymax {
+            square_coordinates(&(x + h), &(y + h), &h, &mut nodes);
             let latest_dist = signed_distance(&(x + h), &(y + h), polygon);
             cell_queue.push(Qcell {
                 centroid: Point::new(x + h, y + h),
@@ -247,10 +272,14 @@ where
             continue;
         }
         // Otherwise, add a new quadtree node and start again
-        h = cell.extent / two;
-        add_quad(&mut cell_queue, &cell, &h, polygon);
+        h = cell.h / two;
+        add_quad(&mut cell_queue, &cell, &h, polygon, &mut nodes);
     }
     // We've exhausted the queue, so return the best solution we've found
+    match write_nodes(&nodes) {
+        Ok(_) => {}
+        Err(e) => println!("{:?}", e),
+    };
     Point::new(best_cell.centroid.x(), best_cell.centroid.y())
 }
 
