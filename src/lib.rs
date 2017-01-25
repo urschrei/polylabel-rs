@@ -285,8 +285,8 @@ mod tests {
         ];
         let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
         let poly = Polygon::new(ls, vec![]);
-        let res = polylabel(&poly, &1.0);
-        assert_eq!(res, Point::new(0.5, 1.5));
+        let res = polylabel(&poly, &0.10);
+        assert_eq!(res, Point::new(0.5625, 0.5625));
     }
     #[test]
     fn degenerate_polygon_test() {
