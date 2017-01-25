@@ -87,7 +87,7 @@ fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
     if inside { distance } else { -distance }
 }
 
-// Add a new quadtree node to the minimum priority queue
+// Add a new quadtree node to the binary heap
 fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &Polygon<T>)
     where T: Float
 {
