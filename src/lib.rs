@@ -35,6 +35,21 @@ struct Cell<T>
     max_distance: T,
 }
 
+impl<T> Cell<T>
+    where T: Float
+{
+    /// Creates a new Cell
+    pub fn new(x: T, y: T, h: T, distance: T, max_distance: T) -> Cell<T> {
+        Cell {
+            x: x,
+            y: y,
+            h: h,
+            distance: distance,
+            max_distance: max_distance,
+        }
+    }
+}
+
 impl<T> Ord for Cell<T>
     where T: Float
 {
@@ -79,40 +94,32 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
     let two = T::one() + T::one();
     // 1
     let mut new_dist = signed_distance(&(cell.x - *nh), &(cell.y - *nh), polygon);
-    mpq.push(Cell {
-        x: cell.x - *nh,
-        y: cell.y - *nh,
-        h: *nh,
-        distance: new_dist,
-        max_distance: new_dist + *nh * two.sqrt(),
-    });
+    mpq.push(Cell::new(cell.x - *nh,
+                       cell.y - *nh,
+                       *nh,
+                       new_dist,
+                       new_dist + *nh * two.sqrt()));
     // 2
     new_dist = signed_distance(&(cell.x + *nh), &(cell.y - *nh), polygon);
-    mpq.push(Cell {
-        x: cell.x + *nh,
-        y: cell.y - *nh,
-        h: *nh,
-        distance: new_dist,
-        max_distance: new_dist + *nh * two.sqrt(),
-    });
+    mpq.push(Cell::new(cell.x + *nh,
+                       cell.y - *nh,
+                       *nh,
+                       new_dist,
+                       new_dist + *nh * two.sqrt()));
     // 3
     new_dist = signed_distance(&(cell.x - *nh), &(cell.y + *nh), polygon);
-    mpq.push(Cell {
-        x: cell.x - *nh,
-        y: cell.y + *nh,
-        h: *nh,
-        distance: new_dist,
-        max_distance: new_dist + *nh * two.sqrt(),
-    });
+    mpq.push(Cell::new(cell.x - *nh,
+                       cell.y + *nh,
+                       *nh,
+                       new_dist,
+                       new_dist + *nh * two.sqrt()));
     // 4
     new_dist = signed_distance(&(cell.x + *nh), &(cell.y + *nh), polygon);
-    mpq.push(Cell {
-        x: cell.x + *nh,
-        y: cell.y + *nh,
-        h: *nh,
-        distance: new_dist,
-        max_distance: new_dist + *nh * two.sqrt(),
-    });
+    mpq.push(Cell::new(cell.x + *nh,
+                       cell.y + *nh,
+                       *nh,
+                       new_dist,
+                       new_dist + *nh * two.sqrt()));
 }
 
 
@@ -274,15 +281,8 @@ mod tests {
     #[test]
     fn polygon_l_test() {
         // an L shape
-        let coords = vec![
-            (0.0, 0.0),
-            (4.0, 0.0),
-            (4.0, 1.0),
-            (1.0, 1.0),
-            (1.0, 4.0),
-            (0.0, 4.0),
-            (0.0, 0.0)
-        ];
+        let coords = vec![(0.0, 0.0), (4.0, 0.0), (4.0, 1.0), (1.0, 1.0), (1.0, 4.0), (0.0, 4.0),
+                          (0.0, 0.0)];
         let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
         let poly = Polygon::new(ls, vec![]);
         let res = polylabel(&poly, &0.10);
