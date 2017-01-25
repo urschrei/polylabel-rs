@@ -48,7 +48,7 @@ A Python example is available in [`ffi.py`](ffi.py)
 
 # Binaries
 Binary libs for:
-- `x86_64` *nix (built using `manylinux1`, thus easy to include in Python 2.7 / 3.4 wheels) and OS X
+- `x86_64` *nix (built using `manylinux1`, thus easy to include in Python 2.7 / 3.5 / 3.6 wheels) and OS X
 - `i686` and `x86_64` Windows
 
 are available in [releases](releases).
