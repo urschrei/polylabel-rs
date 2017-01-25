@@ -20,7 +20,7 @@ mod ffi;
 pub use ffi::{polylabel_ffi, Array, WrapperArray, Position};
 
 // A helper struct for `polylabel`
-#[derive(PartialEq, Debug)]
+#[derive(Debug)]
 struct Cell<T>
     where T: Float
 {
@@ -35,12 +35,11 @@ struct Cell<T>
     max_distance: T,
 }
 
-// These impls give us a min-heap when used with BinaryHeap
 impl<T> Ord for Cell<T>
     where T: Float
 {
     fn cmp(&self, other: &Cell<T>) -> std::cmp::Ordering {
-        other.max_distance.partial_cmp(&self.max_distance).unwrap()
+        self.max_distance.partial_cmp(&other.max_distance).unwrap()
     }
 }
 impl<T> PartialOrd for Cell<T>
@@ -51,6 +50,15 @@ impl<T> PartialOrd for Cell<T>
     }
 }
 impl<T> Eq for Cell<T> where T: Float {}
+impl<T> PartialEq for Cell<T>
+    where T: Float
+{
+    fn eq(&self, other: &Cell<T>) -> bool
+        where T: Float
+    {
+        self.max_distance == other.max_distance
+    }
+}
 
 // Signed distance from a Cell's centroid to a Polygon's outline
 // Returned value is negative if the point is outside the polygon's exterior ring
@@ -277,8 +285,8 @@ mod tests {
         ];
         let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
         let poly = Polygon::new(ls, vec![]);
-        let res = polylabel(&poly, &0.10);
-        assert_eq!(res, Point::new(0.5625, 0.5625));
+        let res = polylabel(&poly, &1.0);
+        assert_eq!(res, Point::new(0.5, 1.5));
     }
     #[test]
     fn degenerate_polygon_test() {
@@ -297,7 +305,7 @@ mod tests {
         assert_eq!(b_res, Point::new(0.0, 0.0));
     }
     #[test]
-    // Is our minimum priority queue behaving as it should?
+    // Is our priority queue behaving as it should?
     fn test_queue() {
         let a = Cell {
             x: 1.0,
@@ -325,8 +333,8 @@ mod tests {
         v.push(b);
         v.push(c);
         let mut q = BinaryHeap::from(v);
-        assert_eq!(q.pop().unwrap().max_distance, 7.0);
-        assert_eq!(q.pop().unwrap().max_distance, 8.0);
         assert_eq!(q.pop().unwrap().max_distance, 9.0);
+        assert_eq!(q.pop().unwrap().max_distance, 8.0);
+        assert_eq!(q.pop().unwrap().max_distance, 7.0);
     }
 }
