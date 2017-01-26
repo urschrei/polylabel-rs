@@ -145,7 +145,7 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
 ///    (0.0, 0.0)];
 ///
 /// let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
-/// let poly = Polygon(ls, vec![]);
+/// let poly = Polygon::new(ls, vec![]);
 ///
 /// // Its centroid lies outside the polygon
 /// assert_eq!(poly.centroid(), Point::new(1.3571428571428572, 1.3571428571428572));
