@@ -8,7 +8,7 @@ A Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) al
 Visualised: The orange dot is the polygon centroid. The teal dot is the ideal label position.
 [![GIF](output.gif)]()
 
-You can generate this visualisation yourself by cloning this repo, switching to the [`visualise`](https://github.com/urschrei/polylabel-rs/tree/visualise) branch, and opening the [`visualise.ipynb`](https://github.com/urschrei/polylabel-rs/blob/visualise/visualise.ipynb) Jupyter notebook, and stepping through the cells. You can also easily visualise a Polygon of your own using the notebook.
+You can generate this visualisation yourself by cloning this repo, switching to the [`visualise`](https://github.com/urschrei/polylabel-rs/tree/visualise) branch, and opening the [`visualise.ipynb`](https://github.com/urschrei/polylabel-rs/blob/visualise/visualise.ipynb) Jupyter notebook, then stepping through the cells. You can also easily visualise a Polygon of your own using the notebook.
 
 # How to Use
 ```rust
