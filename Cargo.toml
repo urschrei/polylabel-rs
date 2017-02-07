@@ -1,10 +1,10 @@
 [package]
 name = "polylabel"
-version = "0.1.11"
+version = "1.0.0"
 authors = ["Stephan Hügel <urschrei@gmail.com>"]
 description = "A Rust implementation of the Polylabel algorithm"
 readme = "README.md"
-keywords = ["geo", "polylabel"]
+keywords = ["geo", "polylabel", "gis"]
 repository = "https://github.com/urschrei/polylabel-rs"
 license = "MIT"
 

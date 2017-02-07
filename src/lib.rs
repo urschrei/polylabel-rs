@@ -208,7 +208,7 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         best_cell = bbox_cell;
     }
 
-    // Minimum priority queue
+    // Priority queue
     let mut cell_queue: BinaryHeap<Cell<T>> = BinaryHeap::new();
     // Build an initial quadtree node, which covers the Polygon
     let mut x = bbox.xmin;
