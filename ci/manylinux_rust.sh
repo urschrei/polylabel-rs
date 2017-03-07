@@ -20,7 +20,7 @@ install_rustup() {
 
 # Generate artifacts for release
 mk_artifacts() {
-    cargo build --manifest-path=/io/Cargo.toml --target $TARGET --release
+    RUSTFLAGS=RUSTFLAGS='-C target-cpu=native' cargo build --manifest-path=/io/Cargo.toml --target $TARGET --release
 }
 
 mk_tarball() {
