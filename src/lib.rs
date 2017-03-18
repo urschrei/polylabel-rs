@@ -5,8 +5,8 @@ use std::fmt::Debug;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
-extern crate num;
-use self::num::{Float, FromPrimitive};
+extern crate num_traits;
+use self::num_traits::{Float, FromPrimitive};
 
 extern crate geo;
 use self::geo::{Point, Polygon};

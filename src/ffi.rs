@@ -6,7 +6,7 @@ use self::libc::{c_void, c_double, size_t};
 use super::geo::{Point, Polygon, LineString};
 
 use super::polylabel;
-use super::num::Float;
+use super::num_traits::Float;
 
 /// Wrapper for a void pointer to a sequence of [`Array`](struct.Array.html)s, and the sequence length
 ///
