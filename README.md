@@ -38,11 +38,11 @@ https://docs.rs/polylabel
 
 # FFI
 Call `polylabel_ffi` with the following three mandatory arguments:
-- [`Array`](https://docs.rs/polylabel/polylabel/struct.Array.html) (a void pointer to an array of two-element `c_double`s, the exterior Polygon ring)
-- [`WrapperArray`](https://docs.rs/polylabel/polylabel/struct.WrapperArray.html) (a void pointer to an array of `Array`s, the interior Polygon rings, empty if there are none)
+- [`Array`](https://docs.rs/polylabel/1.0.3/polylabel/struct.Array.html) (a void pointer to an array of two-element `c_double`s, the exterior Polygon ring)
+- [`WrapperArray`](https://docs.rs/polylabel/1.0.3/polylabel/struct.WrapperArray.html) (a void pointer to an array of `Array`s, the interior Polygon rings, empty if there are none)
 - `tolerance`, a `c_double`
 
-The function returns a [struct](https://docs.rs/polylabel/polylabel/struct.Position.html) with two `c_double` fields:
+The function returns a [struct](https://docs.rs/polylabel/1.0.3/polylabel/struct.Position.html) with two `c_double` fields:
 - `x_pos`
 - `y_pos`
 
