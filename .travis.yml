@@ -124,11 +124,11 @@ after_success:
   - travis-cargo --only stable doc-upload
   - travis-cargo coveralls --no-sudo --verify
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./kcov/build/src/kcov --verify --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/polylabel-*; fi
-  - if [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then docker pull $DOCKER_IMAGE; fi
+  - if [[ "$TARGET" == "x86_64-unknown-linux-musl" ]]; then docker pull $DOCKER_IMAGE; fi
 
 before_deploy:
-  - if ! [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then bash ci/before_deploy.sh; fi
-  - if [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then sudo docker run -e TRAVIS_TAG="$TRAVIS_TAG" --rm -v `pwd`:/io $DOCKER_IMAGE /io/ci/manylinux_rust.sh; fi
+  - if ! [[ "$TARGET" == "x86_64-unknown-linux-musl" ]]; then bash ci/before_deploy.sh; fi
+  - if [[ "$TARGET" == "x86_64-unknown-linux-musl" ]]; then sudo docker run -e TRAVIS_TAG="$TRAVIS_TAG" --rm -v `pwd`:/io $DOCKER_IMAGE /io/ci/manylinux_rust.sh; fi
   - sudo chown $USER ${PROJECT_NAME}-${TRAVIS_TAG}-${TARGET}.tar.gz
   
 deploy:
