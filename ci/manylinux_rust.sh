@@ -5,22 +5,26 @@ set -ex
 
 export PROJECT_NAME=polylabel-rs
 # we pass {TRAVIS_TAG} into Docker from Travis
-export TARGET=x86_64-unknown-linux-gnu
+export TARGET=x86_64-unknown-linux-musl
 
 export PATH="$PATH:$HOME/.cargo/bin"
 # we always produce release artifacts using stable
 export TRAVIS_RUST_VERSION=stable
 
 install_rustup() {
-    # toolchain is set to stable by default
-    curl https://sh.rustup.rs -sSf | sh -s -- -y
-    rustc -V
-    cargo -V
+    curl -LSfs https://japaric.github.io/trust/install.sh | \
+    sh -s -- \
+       --force \
+       --git japaric/cross \
+       --tag $tag \
+       --target $target
 }
 
 # Generate artifacts for release
 mk_artifacts() {
-    RUSTFLAGS='-C target-cpu=native' cargo build --manifest-path=/io/Cargo.toml --target $TARGET --release
+    # RUSTFLAGS='-C target-cpu=native' cargo build --manifest-path=/io/Cargo.toml --target $TARGET --release
+    cross rustc --manifest-path=/io/Cargo.toml --target $TARGET --release -- -C target-cpu=native
+
 }
 
 mk_tarball() {
