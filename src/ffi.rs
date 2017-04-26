@@ -69,8 +69,12 @@ pub extern "C" fn polylabel_ffi(outer: Array,
     let exterior: Vec<[f64; 2]> =
         unsafe { slice::from_raw_parts(outer.data as *mut [c_double; 2], outer.len).to_vec() };
     let interior: Vec<Vec<[f64; 2]>> = reconstitute2(inners);
-    let ls_ext = LineString(exterior.iter().map(|e| Point::new(e[0], e[1])).collect());
-    let ls_int: Vec<LineString<c_double>> = interior.iter()
+    let ls_ext = LineString(exterior
+                                .iter()
+                                .map(|e| Point::new(e[0], e[1]))
+                                .collect());
+    let ls_int: Vec<LineString<c_double>> = interior
+        .iter()
         .map(|vec| LineString(vec.iter().map(|e| Point::new(e[0], e[1])).collect()))
         .collect();
     let poly = Polygon::new(ls_ext, ls_int);

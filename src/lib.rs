@@ -54,7 +54,9 @@ impl<T> Ord for Cell<T>
     where T: Float
 {
     fn cmp(&self, other: &Cell<T>) -> std::cmp::Ordering {
-        self.max_distance.partial_cmp(&other.max_distance).unwrap()
+        self.max_distance
+            .partial_cmp(&other.max_distance)
+            .unwrap()
     }
 }
 impl<T> PartialOrd for Cell<T>
@@ -218,12 +220,12 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         while y < bbox.ymax {
             let latest_dist = signed_distance(&(x + h), &(y + h), polygon);
             cell_queue.push(Cell {
-                x: x + h,
-                y: y + h,
-                h: h,
-                distance: latest_dist,
-                max_distance: latest_dist + h * two.sqrt(),
-            });
+                                x: x + h,
+                                y: y + h,
+                                h: h,
+                                distance: latest_dist,
+                                max_distance: latest_dist + h * two.sqrt(),
+                            });
             y = y + cell_size;
         }
         x = x + cell_size;
