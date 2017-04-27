@@ -14,7 +14,7 @@ export TRAVIS_RUST_VERSION=stable
 install_rustup() {
     yum -y install xz
     sort --version
-    wget http://ftp.gnu.org/gnu/coreutils/coreutils-8.27.tar.xz && unxz coreutils-8.27.tar.xz && tar xzvf coreutils-8.27.tar && cd coreutils-8.27
+    wget http://ftp.gnu.org/gnu/coreutils/coreutils-8.27.tar.xz && unxz coreutils-8.27.tar.xz && tar xvf coreutils-8.27.tar && cd coreutils-8.27
     ./configure >/dev/null
     make && make install
     sort --version
