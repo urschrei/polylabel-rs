@@ -42,6 +42,8 @@ install_rustup() {
 # Generate artifacts for release
 mk_artifacts() {
     ls /io
+    ls $HOME/.cargo/bin
+    echo $PATH
     rustc --version
     # RUSTFLAGS='-C target-cpu=native' cargo build --manifest-path=/io/Cargo.toml --target $TARGET --release
     cross rustc --manifest-path=/io/Cargo.toml --target $TARGET --release -- -C target-cpu=native
