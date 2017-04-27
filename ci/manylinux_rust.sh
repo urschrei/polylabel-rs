@@ -15,6 +15,7 @@ export TRAVIS_RUST_VERSION=stable
 export FORCE_UNSAFE_CONFIGURE=1
 
 install_rustup() {
+    local target=x86_64-unknown-linux-musl
 
     mkdir $HOME/cutils
     yum -y install xz
