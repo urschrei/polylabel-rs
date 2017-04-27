@@ -13,7 +13,7 @@ export TRAVIS_RUST_VERSION=stable
 
 install_rustup() {
     sort --version
-    wget http://ftp.gnu.org/gnu/coreutils/coreutils-8.27.tar.xz && tar xzvf coreutils-8.27.tar.gz && cd coreutils-8.27
+    wget http://ftp.gnu.org/gnu/coreutils/coreutils-8.27.tar.xz && tar xzvf coreutils-8.27.tar.xz && cd coreutils-8.27
     ./configure
     make && make install
     sort --version
