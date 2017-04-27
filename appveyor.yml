@@ -60,7 +60,6 @@ before_deploy:
   # build artifacts for generating a .def, needed by the MinGW Python build
   - cargo rustc --release -- -C target-cpu=native -C link-args=-Wl,--out-implib,polylabel.a
   - dlltool -z target\release\polylabel.def --export-all-symbols target\release\polylabel.dll
-  - ps: ls target\release
   - ps: ci\before_deploy.ps1
 
 deploy:
@@ -78,9 +77,9 @@ deploy:
     appveyor_repo_tag: true
     CHANNEL: stable
 
-cache:
-  - C:\Users\appveyor\.cargo\registry
-  - target
+# cache:
+#   - C:\Users\appveyor\.cargo\registry
+#   - target
 
 branches:
   only:

@@ -3,7 +3,7 @@ set -ex
 main() {
     local target=
     if [ $TRAVIS_OS_NAME = linux ]; then
-        target=x86_64-unknown-linux-musl
+        target=x86_64-unknown-linux-gnu
         sort=sort
     else
         target=x86_64-apple-darwin
