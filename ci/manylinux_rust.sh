@@ -12,7 +12,9 @@ export PATH="$PATH:$HOME/.cargo/bin"
 export TRAVIS_RUST_VERSION=stable
 
 install_rustup() {
-
+    wget http://ftp.gnu.org/gnu/coreutils/coreutils-8.13.tar.gz && tar xzvf coreutils-8.13.tar.gz && cd coreutils-8.13
+    ./configure
+    make && sudo make install
     # This fetches latest stable release
     local tag=$(git ls-remote --tags --refs --exit-code https://github.com/japaric/cross \
                        | cut -d/ -f3 \
