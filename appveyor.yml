@@ -3,7 +3,6 @@ environment:
   global:
     # This will be used as part of the zipfile name
     # TODO change the project name
-    PROJECT_NAME: polylabel-rs
     CRATE_NAME: polylabel-rs
     # TODO This is the Rust channel that build jobs will use by default but can be
     # overridden on a case by case basis down below
@@ -32,7 +31,6 @@ environment:
       CHANNEL: nightly
 
 # Install Rust and Cargo
-# (Based on from https://github.com/rust-lang/libc/blob/master/appveyor.yml)
 install:
   - ps: >-
       If ($Env:TARGET -eq 'x86_64-pc-windows-gnu') {
@@ -66,13 +64,7 @@ before_deploy:
   - cargo rustc --release -- -C target-cpu=native -C link-args=-Wl,--out-implib,polylabel.a
   - dlltool -z target\release\polylabel.def --export-all-symbols target\release\polylabel.dll
   - ps: ls target\release
-  - mkdir staging
-  # TODO update this part to copy the artifacts that make sense for your project
-  - copy target\release\polylabel* staging
-  - cd staging
-    # release zipfile will look like 'rust-everywhere-v1.2.3-x86_64-pc-windows-msvc'
-  - 7z a ../%PROJECT_NAME%-%APPVEYOR_REPO_TAG_NAME%-%TARGET%.zip *
-  - appveyor PushArtifact ../%PROJECT_NAME%-%APPVEYOR_REPO_TAG_NAME%-%TARGET%.zip
+  - ps: ci\before_deploy.ps1
 
 deploy:
   appveyor_repo_tag: true
@@ -89,7 +81,14 @@ deploy:
     appveyor_repo_tag: true
     CHANNEL: stable
 
+cache:
+  - C:\Users\appveyor\.cargo\registry
+  - target
+
 branches:
   only:
     - master
     - /v\d\.\d\.\d/
+
+# Building is done in the test phase, so we disable Appveyor's build phase.
+build: false
