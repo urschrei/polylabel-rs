@@ -126,10 +126,6 @@ script:
 after_script: set +e
 
 after_success:
-  - travis-cargo --only stable doc
-  - travis-cargo --only stable doc-upload
-  - travis-cargo coveralls --no-sudo --verify
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./kcov/build/src/kcov --verify --coveralls-id=$TRAVIS_JOB_ID --exclude-pattern=/.cargo target/kcov target/debug/polylabel-*; fi
   - if [[ "$TARGET" == "x86_64-unknown-linux-musl" ]]; then docker pull $DOCKER_IMAGE; fi
 
 before_deploy:
