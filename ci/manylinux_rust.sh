@@ -28,8 +28,8 @@ install_rustup() {
     yum -y install xz
     sort --version
     wget http://ftp.gnu.org/gnu/coreutils/coreutils-8.27.tar.xz && unxz coreutils-8.27.tar.xz && tar xvf coreutils-8.27.tar >/dev/null && cd coreutils-8.27
-    ./configure >/dev/null
-    make && make install --prefix=$HOME/cutils
+    ./configure --prefix=$HOME/cutils >/dev/null
+    make >/dev/null && make install
     $HOME/cutils/sort --version
     # This fetches latest stable release
     local tag=$(git ls-remote --tags --refs --exit-code https://github.com/japaric/cross \
