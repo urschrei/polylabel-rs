@@ -15,8 +15,9 @@ export TRAVIS_RUST_VERSION=stable
 export FORCE_UNSAFE_CONFIGURE=1
 
 install_rustup() {
+    curl https://sh.rustup.rs -sSf | sh -s -- -y
+    rustc -V
     local target=x86_64-unknown-linux-musl
-
     mkdir $HOME/cutils
     yum -y install xz
     sort --version
@@ -41,13 +42,9 @@ install_rustup() {
 
 # Generate artifacts for release
 mk_artifacts() {
-    ls /io
     ls $HOME/.cargo/bin
-    echo $PATH
-    rustc --version
     # RUSTFLAGS='-C target-cpu=native' cargo build --manifest-path=/io/Cargo.toml --target $TARGET --release
     cross rustc --manifest-path=/io/Cargo.toml --target $TARGET --release -- -C target-cpu=native
-
 }
 
 mk_tarball() {
