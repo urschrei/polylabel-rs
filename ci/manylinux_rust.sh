@@ -15,28 +15,19 @@ export TRAVIS_RUST_VERSION=stable
 export FORCE_UNSAFE_CONFIGURE=1
 
 install_rustup() {
-    local target=
-    if [ $TRAVIS_OS_NAME = linux ]; then
-        target=x86_64-unknown-linux-musl
-        sort=sort
-    else
-        target=x86_64-apple-darwin
-        sort=gsort  # for `sort --sort-version`, from brew's coreutils.
-    fi
 
     mkdir $HOME/cutils
     yum -y install xz
     sort --version
     wget http://ftp.gnu.org/gnu/coreutils/coreutils-8.27.tar.xz && unxz coreutils-8.27.tar.xz && tar xvf coreutils-8.27.tar >/dev/null && cd coreutils-8.27
     ./configure --bindir=$HOME/cutils >/dev/null
-    make >/dev/null && make install
-    ls -r $HOME/cutils
+    make >/dev/null && make install >/dev/null
     $HOME/cutils/sort --version
     # This fetches latest stable release
     local tag=$(git ls-remote --tags --refs --exit-code https://github.com/japaric/cross \
                        | cut -d/ -f3 \
                        | grep -E '^v[0.1.0-9.]+$' \
-                       | $sort --version-sort \
+                       | $HOME/cutils/sort --version-sort \
                        | tail -n1)
 
     curl -LSfs https://japaric.github.io/trust/install.sh | \
