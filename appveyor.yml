@@ -63,7 +63,6 @@ artifacts:
 before_deploy:
   # Generate artifacts for release
   # build artifacts for generating a .def, needed by the MinGW Python build
-  - echo %PATH%
   - cargo rustc --release -- -C target-cpu=native -C link-args=-Wl,--out-implib,polylabel.a
   - dlltool -z target\release\polylabel.def --export-all-symbols target\release\polylabel.dll
   - ps: ls target\release
