@@ -11,10 +11,13 @@ export PATH="$PATH:$HOME/.cargo/bin"
 # we always produce release artifacts using stable
 export TRAVIS_RUST_VERSION=stable
 
+# coreutils configure whines otherwise 
+FORCE_UNSAFE_CONFIGURE=1
+
 install_rustup() {
     yum -y install xz
     sort --version
-    wget http://ftp.gnu.org/gnu/coreutils/coreutils-8.27.tar.xz && unxz coreutils-8.27.tar.xz && tar xvf coreutils-8.27.tar && cd coreutils-8.27
+    wget http://ftp.gnu.org/gnu/coreutils/coreutils-8.27.tar.xz && unxz coreutils-8.27.tar.xz && tar xvf coreutils-8.27.tar >/dev/null && cd coreutils-8.27
     ./configure >/dev/null
     make && make install
     sort --version
