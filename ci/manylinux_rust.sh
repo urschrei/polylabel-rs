@@ -12,7 +12,7 @@ export PATH="$PATH:$HOME/.cargo/bin"
 export TRAVIS_RUST_VERSION=stable
 
 # coreutils configure whines otherwise 
-FORCE_UNSAFE_CONFIGURE=1
+export FORCE_UNSAFE_CONFIGURE=1
 
 install_rustup() {
     yum -y install xz
