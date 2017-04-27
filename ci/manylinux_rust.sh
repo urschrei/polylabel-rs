@@ -3,7 +3,7 @@ set -ex
 
 . /io/ci/utils.sh
 
-export PROJECT_NAME=polylabel-rs
+export CRATE_NAME=polylabel-rs
 # we pass {TRAVIS_TAG} into Docker from Travis
 export TARGET=x86_64-unknown-linux-musl
 
@@ -43,7 +43,7 @@ mk_tarball() {
 
     pushd $td
     # release tarball will look like 'rust-everywhere-v1.2.3-x86_64-unknown-linux-gnu.tar.gz'
-    tar czf /io/${PROJECT_NAME}-${TRAVIS_TAG}-${TARGET}.tar.gz *
+    tar czf /io/${CRATE_NAME}-${TRAVIS_TAG}-${TARGET}.tar.gz *
 
     popd
     rm -r $td

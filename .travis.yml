@@ -14,7 +14,6 @@ env:
   global:
     # This will be part of the release tarball
     # TODO change the project name
-    - PROJECT_NAME=polylabel-rs
     - CRATE_NAME=polylabel-rs
     # TODO comment out this variable if you don't want to build .deb packages on all the targets.
     # - MAKE_DEB=yes
@@ -131,7 +130,7 @@ after_success:
 before_deploy:
   - if ! [[ "$TARGET" == "x86_64-unknown-linux-musl" ]]; then bash ci/before_deploy.sh; fi
   - if [[ "$TARGET" == "x86_64-unknown-linux-musl" ]]; then sudo docker run -e TRAVIS_TAG="$TRAVIS_TAG" --rm -v `pwd`:/io $DOCKER_IMAGE /io/ci/manylinux_rust.sh; fi
-  - sudo chown $USER ${PROJECT_NAME}-${TRAVIS_TAG}-${TARGET}.tar.gz
+  - sudo chown $USER ${CRATE_NAME}-${TRAVIS_TAG}-${TARGET}.tar.gz
   
 deploy:
   provider: releases
@@ -144,7 +143,7 @@ deploy:
   api_key:
         - secure: Ow/YGlhzIMhfjwSPVEu7AdJBDGsIq/fQ9/T/YG4QGwXSPS96SghS1872HNkGLEVuudFHbl24Xk7MtDQFeLN5fcQFM1sz3TjqAeHDaBb5YOppMkmcAt3qL0CAxXj9OjHRqv3o80kTsyVl0NCIxxLrJUOIllvG9+Tmsuuaqp3wK0Ijk2voYb16kY9Zx1Ui8jl5N4WuljCK/OwQfOQdvLT9bQFoiHGdxni35JzEGHw7NpALwm6PnLptQWn/DweAHY3lvrHea0brIjLf8hkN49hN120l+LL/wcYcky2NyIvu7UJLbZTOuZgS3BpfZtRCzcTmosejVhfymJcUbSDQbkBRsjDDAx7tcuN/u4EiC0utAyB8T+V3iCMjue0Ndvn+ZFi8h6GVmhi5OgAFYDfTn0yOexn6AihPSjNSXV3jGJ5M3gtT2kauNwRete6LZJK+d2pnzsQJ256nnuknJaJ2/jm9oAT429a/Ewyy+aebxERYYMDqd+Kk8+mCKk2nYGiw4ADJsxanu1bdAjcJ9Og8i1cpITnkFwhREVVGmleLlhkT6ekzrETJSuqA7KeffonlSMSbUV3d8oQHeYGZvnUJnJ+yaobUq2mmdzb1qDv23AdH/1mrf0Y7kNeiaVKBYaikm6MMd/KWQeG4eARZFBbv/lXkuRuSp0OpnIHAlgAAHJciKsM=
   file_glob: true
-  file: ${PROJECT_NAME}-${TRAVIS_TAG}-${TARGET}.*
+  file: ${CRATE_NAME}-${TRAVIS_TAG}-${TARGET}.*
   # don't delete the artifacts from previous phases
   skip_cleanup: true
   # deploy when a new tag is pushed
