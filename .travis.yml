@@ -2,7 +2,6 @@ dist: trusty
 language: rust
 services: docker
 sudo: required
-cache: cargo
 addons:
   apt:
     packages:
@@ -109,15 +108,16 @@ before_install:
   - set -e
 
 before_script: |
-  PKGNAME="${TRAVIS_REPO_SLUG}" # must match with cargo.toml
-  LOCAL="~/.local" # install here to avoid `sudo`
+# must match with cargo.toml
+  PKGNAME="${TRAVIS_REPO_SLUG}"
+# install here to avoid `sudo`
+  LOCAL="~/.local"
   pip install travis-cargo --user &&
   export PATH=$HOME/.local/bin:$PATH
 
 install:
-  - echo $TRAVIS_RUST_VERSION
-  - source ~/.cargo/env || true
   - bash ci/install.sh
+  - source ~/.cargo/env || true
 
 script:
   - bash ci/script.sh
@@ -130,10 +130,9 @@ after_success:
 before_deploy:
   - if ! [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then bash ci/before_deploy.sh; fi
   - if [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then sudo docker run -e TRAVIS_TAG="$TRAVIS_TAG" --rm -v `pwd`:/io $DOCKER_IMAGE /io/ci/manylinux_rust.sh; fi
-  - sudo chown $USER ${CRATE_NAME}-${TRAVIS_TAG}-${TARGET}.tar.gz
+  # - sudo chown $USER ${CRATE_NAME}-${TRAVIS_TAG}-${TARGET}.tar.gz
   
 deploy:
-  provider: releases
   # TODO Regenerate this api_key for your project, this one won't work for you. Here's how:
   # - Go to 'https://github.com/settings/tokens/new' and generate a Token with only the
   # `public_repo` scope enabled
@@ -143,24 +142,30 @@ deploy:
   api_key:
         - secure: Ow/YGlhzIMhfjwSPVEu7AdJBDGsIq/fQ9/T/YG4QGwXSPS96SghS1872HNkGLEVuudFHbl24Xk7MtDQFeLN5fcQFM1sz3TjqAeHDaBb5YOppMkmcAt3qL0CAxXj9OjHRqv3o80kTsyVl0NCIxxLrJUOIllvG9+Tmsuuaqp3wK0Ijk2voYb16kY9Zx1Ui8jl5N4WuljCK/OwQfOQdvLT9bQFoiHGdxni35JzEGHw7NpALwm6PnLptQWn/DweAHY3lvrHea0brIjLf8hkN49hN120l+LL/wcYcky2NyIvu7UJLbZTOuZgS3BpfZtRCzcTmosejVhfymJcUbSDQbkBRsjDDAx7tcuN/u4EiC0utAyB8T+V3iCMjue0Ndvn+ZFi8h6GVmhi5OgAFYDfTn0yOexn6AihPSjNSXV3jGJ5M3gtT2kauNwRete6LZJK+d2pnzsQJ256nnuknJaJ2/jm9oAT429a/Ewyy+aebxERYYMDqd+Kk8+mCKk2nYGiw4ADJsxanu1bdAjcJ9Og8i1cpITnkFwhREVVGmleLlhkT6ekzrETJSuqA7KeffonlSMSbUV3d8oQHeYGZvnUJnJ+yaobUq2mmdzb1qDv23AdH/1mrf0Y7kNeiaVKBYaikm6MMd/KWQeG4eARZFBbv/lXkuRuSp0OpnIHAlgAAHJciKsM=
   file_glob: true
-  file: ${CRATE_NAME}-${TRAVIS_TAG}-${TARGET}.*
+  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
   # don't delete the artifacts from previous phases
   skip_cleanup: true
   # deploy when a new tag is pushed
   on:
-    # channel to use to produce the release artifacts
-    # NOTE make sure you only release *once* per target
-    # TODO you may want to pick a different channel
+    # TODO Here you can pick which targets will generate binary releases
+    # In this example, there are some targets that are tested using the stable
+    # and nightly channels. This condition makes sure there is only one release
+    # for such targets and that's generated using the stable channel
     condition: $TRAVIS_RUST_VERSION = stable
     tags: true
+  provider: releases
+  skip_cleanup: true
+
+cache: cargo
+before_cache:
+  # Travis can't cache files that are not readable by "others"
+  - chmod -R a+r $HOME/.cargo
 
 branches:
   only:
-    # Pushes and PR to the master branch
-    - master
-    # IMPORTANT Ruby regex to match tags. Required, or travis won't trigger deploys when a new tag
-    # is pushed. This regex matches semantic versions like v1.2.3-rc4+2016.02.22
+    # release tags
     - /^v\d+\.\d+\.\d+.*$/
+    - master
 
 notifications:
   email:
