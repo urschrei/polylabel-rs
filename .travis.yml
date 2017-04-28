@@ -2,23 +2,11 @@ dist: trusty
 language: rust
 services: docker
 sudo: required
-addons:
-  apt:
-    packages:
-      - libcurl4-openssl-dev
-      - libelf-dev
-      - libdw-dev
-      - binutils-dev
 env:
   global:
     # This will be part of the release tarball
     # TODO change the project name
     - CRATE_NAME=polylabel-rs
-    # TODO comment out this variable if you don't want to build .deb packages on all the targets.
-    # - MAKE_DEB=yes
-    # TODO update these two variables. They are part of the .deb package metadata
-    - DEB_MAINTAINER="Stephan Hügel <urschrei@gmail.com>"
-    - DEB_DESCRIPTION=""
     - TRAVIS_CARGO_NIGHTLY_FEATURE=""
     - DOCKER_IMAGE=quay.io/pypa/manylinux1_x86_64
     # GH_TOKEN
@@ -108,10 +96,8 @@ before_install:
   - set -e
 
 before_script: |
-# must match with cargo.toml
-  PKGNAME="${TRAVIS_REPO_SLUG}"
-# install here to avoid `sudo`
-  LOCAL="~/.local"
+  PKGNAME="${TRAVIS_REPO_SLUG}" # must match with cargo.toml
+  LOCAL="~/.local" # install here to avoid `sudo`
   pip install travis-cargo --user &&
   export PATH=$HOME/.local/bin:$PATH
 
@@ -154,7 +140,6 @@ deploy:
     condition: $TRAVIS_RUST_VERSION = stable
     tags: true
   provider: releases
-  skip_cleanup: true
 
 cache: cargo
 before_cache:
