@@ -5,7 +5,7 @@ set -ex
 
 export CRATE_NAME=polylabel-rs
 # we pass {TRAVIS_TAG} into Docker from Travis
-export TARGET=x86_64-unknown-linux-musl
+export TARGET=x86_64-unknown-linux-gnu
 
 export PATH="$PATH:$HOME/.cargo/bin"
 # we always produce release artifacts using stable
@@ -17,34 +17,33 @@ export FORCE_UNSAFE_CONFIGURE=1
 install_rustup() {
     curl https://sh.rustup.rs -sSf | sh -s -- -y
     rustc -V
-    local target=x86_64-unknown-linux-musl
-    mkdir $HOME/cutils
-    yum -y install xz
-    sort --version
-    wget http://ftp.gnu.org/gnu/coreutils/coreutils-8.27.tar.xz && unxz coreutils-8.27.tar.xz && tar xvf coreutils-8.27.tar >/dev/null && cd coreutils-8.27
-    ./configure --bindir=$HOME/cutils >/dev/null
-    make >/dev/null && make install >/dev/null
-    $HOME/cutils/sort --version
-    # This fetches latest stable release
-    local tag=$(git ls-remote --tags --refs --exit-code https://github.com/japaric/cross \
-                       | cut -d/ -f3 \
-                       | grep -E '^v[0.1.0-9.]+$' \
-                       | $HOME/cutils/sort --version-sort \
-                       | tail -n1)
+    # local target=x86_64-unknown-linux-musl
+    # mkdir $HOME/cutils
+    # yum -y install xz
+    # sort --version
+    # wget http://ftp.gnu.org/gnu/coreutils/coreutils-8.27.tar.xz && unxz coreutils-8.27.tar.xz && tar xvf coreutils-8.27.tar >/dev/null && cd coreutils-8.27
+    # ./configure --bindir=$HOME/cutils >/dev/null
+    # make >/dev/null && make install >/dev/null
+    # $HOME/cutils/sort --version
+    # # This fetches latest stable release
+    # local tag=$(git ls-remote --tags --refs --exit-code https://github.com/japaric/cross \
+    #                    | cut -d/ -f3 \
+    #                    | grep -E '^v[0.1.0-9.]+$' \
+    #                    | $HOME/cutils/sort --version-sort \
+    #                    | tail -n1)
 
-    curl -LSfs https://japaric.github.io/trust/install.sh | \
-    sh -s -- \
-       --force \
-       --git japaric/cross \
-       --tag $tag \
-       --target $target
+    # curl -LSfs https://japaric.github.io/trust/install.sh | \
+    # sh -s -- \
+    #    --force \
+    #    --git japaric/cross \
+    #    --tag $tag \
+    #    --target $target
 }
 
 # Generate artifacts for release
 mk_artifacts() {
     ls $HOME/.cargo/bin
-    # RUSTFLAGS='-C target-cpu=native' cargo build --manifest-path=/io/Cargo.toml --target $TARGET --release
-    cross rustc --manifest-path=/io/Cargo.toml --target $TARGET --release -- -C target-cpu=native
+    RUSTFLAGS='-C target-cpu=native' cargo build --manifest-path=/io/Cargo.toml --target $TARGET --release
 }
 
 mk_tarball() {
