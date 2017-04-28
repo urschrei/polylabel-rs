@@ -7,7 +7,7 @@ environment:
     # TODO This is the Rust channel that build jobs will use by default but can be
     # overridden on a case by case basis down below
     RUST_VERSION: stable
-    CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\ci\\run_with_env.cmd"
+    # CMD_IN_ENV: "cmd /E:ON /V:ON /C .\\ci\\run_with_env.cmd"
   # TODO feel free to delete targets/channels you don't need
   matrix:
     # Stable channel
@@ -77,9 +77,9 @@ deploy:
     appveyor_repo_tag: true
     CHANNEL: stable
 
-# cache:
-#   - C:\Users\appveyor\.cargo\registry
-#   - target
+cache:
+  - C:\Users\appveyor\.cargo\registry
+  - target
 
 branches:
   only:
