@@ -19,6 +19,9 @@ use self::geo::algorithm::contains::Contains;
 mod ffi;
 pub use ffi::{polylabel_ffi, Array, WrapperArray, Position};
 
+#[allow(dead_code)]
+pub extern "C" fn spare() { println!(""); }
+
 // A helper struct for `polylabel`
 #[derive(Debug)]
 struct Cell<T>
