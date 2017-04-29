@@ -9,7 +9,7 @@ use super::polylabel;
 use super::num_traits::Float;
 
 #[allow(dead_code)]
-fn spare() { println!(""); }
+pub extern "C" fn spare() { println!(""); }
 
 /// Wrapper for a void pointer to a sequence of [`Array`](struct.Array.html)s, and the sequence length
 ///
