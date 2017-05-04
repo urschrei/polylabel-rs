@@ -26,13 +26,13 @@ main() {
         cross rustc --target $TARGET --release
         for lib in target/$TARGET/release/*.dylib; do
             strip -ur $lib
+        done
         cp target/$TARGET/release/*.dylib $stage
         # TODO Update this to package the right artifacts
         cp -r target/$TARGET/release/*.dSYM $stage 2>/dev/null || :
         cd $stage
         tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *
         cd $src
-        done
     fi
 
     rm -rf $stage
