@@ -19,70 +19,38 @@ env:
 # NOTE Make *sure* you don't remove a reference (&foo) if you are going to dereference it (*foo)
 matrix:
   include:
-    # Stable channel
-    # - os: osx
-    #   rust: stable
-    #   env: TARGET=i686-apple-darwin
-    # - os: linux
-    #   rust: stable
-    #   env: TARGET=i686-unknown-linux-gnu
-    #   addons:
-    #     apt:
-    #       packages: &i686_unknown_linux_gnu
-    #         # Cross compiler and cross compiled C libraries
-    #         - gcc-multilib
-
-    ###############################
+    # STABLE
     - os: osx
-      osx_image: xcode7.3
+      osx_image: xcode8.3
       rust: stable
       env: TARGET=x86_64-apple-darwin
+
     - os: linux
       rust: stable
       env: TARGET=x86_64-unknown-linux-gnu
       services: docker
-    # Beta channel
-    # - os: osx
-    #   rust: beta
-    #   env: TARGET=i686-apple-darwin
-    # - os: linux
-    #   rust: beta
-    #   env: TARGET=i686-unknown-linux-gnu
-    #   addons:
-    #     apt:
-    #       packages: *i686_unknown_linux_gnu
-    ############################
+
+    # BETA
     - os: osx
       rust: beta
-      osx_image: xcode7.3
+      osx_image: xcode8.3
       env: TARGET=x86_64-apple-darwin
+
     - os: linux
       rust: beta
       env: TARGET=x86_64-unknown-linux-gnu
 
-
-    # Nightly channel
-    # - os: osx
-    #   rust: nightly
-    #   env: TARGET=i686-apple-darwin
-    # - os: linux
-    #   rust: nightly
-    #   env: TARGET=i686-unknown-linux-gnu
-    #   addons:
-    #     apt:
-    #       packages: *i686_unknown_linux_gnu
-
-    ############
+    # NIGHTLY
     - os: osx
-      osx_image: xcode7.3
+      osx_image: xcode8.3
       rust: nightly
       env: TARGET=x86_64-apple-darwin
+
     - os: linux
       rust: nightly
       env: TARGET=x86_64-unknown-linux-gnu
 
   allow_failures:
-    # Target `i686-unknown-linux-gnu` is currently only available on the nightly channel
     - os: linux
       rust: stable
       env: TARGET=i686-unknown-linux-gnu
@@ -93,28 +61,18 @@ matrix:
 before_install:
   - set -e
 
-before_script: |
-  PKGNAME="${TRAVIS_REPO_SLUG}" # must match with cargo.toml
-  LOCAL="~/.local" # install here to avoid `sudo`
-  pip install travis-cargo --user &&
-  export PATH=$HOME/.local/bin:$PATH
-
 install:
   - bash ci/install.sh
-  - source ~/.cargo/env || true
 
 script:
   - bash ci/script.sh
 
 after_script: set +e
 
-after_success:
-  - if [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then docker pull $DOCKER_IMAGE; fi
-
 before_deploy:
   - if ! [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then bash ci/before_deploy.sh; fi
+  - if [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then docker pull $DOCKER_IMAGE; fi
   - if [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then sudo docker run -e TRAVIS_TAG="$TRAVIS_TAG" --rm -v `pwd`:/io $DOCKER_IMAGE /io/ci/manylinux_rust.sh; fi
-  # - sudo chown $USER ${CRATE_NAME}-${TRAVIS_TAG}-${TARGET}.tar.gz
   
 deploy:
   # TODO Regenerate this api_key for your project, this one won't work for you. Here's how:
