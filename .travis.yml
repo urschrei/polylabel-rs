@@ -12,11 +12,6 @@ env:
     # GH_TOKEN
     - secure: duS4EzFgamSd0mhi/MVsWnnyZpn9031VFSmoNIaLocP/vLRalkewMf/vkc2QCt6L4uJgts6kL3j3JcC9lYa5D6MJwwyAxkn6KwivrG6g/Z+mywjDll+P9iqIF96O0okFxnITu3I4yZDsYb9ERH25sfYzetAFbvjc3vOL8FD6bHboo65iukDWrl18QS8qdHycAb7Q9mxjK+0HbP0IjlROLhjzwJ3/xQ40Cv2xgZKnNGH2QsrbLhnKvrvoScU7AZR3gw5XaNWyiVkVmHEfwNwFYX/LDAeTIzH3sdYFTjersDHLFbmTzLSQuIHfEvSzzBdvasUiZIGF/rsFjjhsov5pjXRbwaZUHrPH6Gkmx916T/vZyWeg38QJvsdZ6n//gbas+Nnr4g/mvVGfZDlr1+RTKZWCmf5HjuC3Wsa59RTkr1+d7p2tefUk52N4cPcn+MF/zXT8EmnL//O/QNjQaLMdmYvnQcWykMtwY2JkHgiuNRy7LRO9NACDw16rVjM0HNGI3XXGTYwL0cB02SSSAkK4/8dHspc8XT57/QLW1XTqk1osgbrTNXxx9ajwpKkXKdbfXmN2hxGHtixtQrwgWEZTuWC6E70RTfLYnu62bZ/jaqx2E/EDVZu3/wq1vBLcal1UCYh9L3ln3RtEAzKNPUtHBKGeEfkaZ+i52jLoUir4lCo=
 
-
-# AFAICT There are a few ways to set up the build jobs. This one is not the DRYest but I feel is the
-# easiest to reason about.
-# TODO Feel free to remove the channels/targets you don't need
-# NOTE Make *sure* you don't remove a reference (&foo) if you are going to dereference it (*foo)
 matrix:
   include:
     # STABLE
@@ -50,19 +45,12 @@ matrix:
       rust: nightly
       env: TARGET=x86_64-unknown-linux-gnu
 
-  allow_failures:
-    - os: linux
-      rust: stable
-      env: TARGET=i686-unknown-linux-gnu
-    - os: linux
-      rust: beta
-      env: TARGET=i686-unknown-linux-gnu
-
 before_install:
   - set -e
 
 install:
   - bash ci/install.sh
+  - source ~/.cargo/env || true
 
 script:
   - bash ci/script.sh
@@ -70,17 +58,17 @@ script:
 after_script: set +e
 
 before_deploy:
+  # OSX deploy doesn't need a Dockerised manylinux1 build
   - if ! [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then bash ci/before_deploy.sh; fi
+  # Linux deploy needs Dockerised manylinux1 artefacts
   - if [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then docker pull $DOCKER_IMAGE; fi
   - if [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then sudo docker run -e TRAVIS_TAG="$TRAVIS_TAG" --rm -v `pwd`:/io $DOCKER_IMAGE /io/ci/manylinux_rust.sh; fi
   
 deploy:
-  # TODO Regenerate this api_key for your project, this one won't work for you. Here's how:
-  # - Go to 'https://github.com/settings/tokens/new' and generate a Token with only the
-  # `public_repo` scope enabled
-  # - Call `travis encrypt $github_token` where $github_token is the token you got in the previous
-  # step and `travis` is the official Travis CI gem (see https://rubygems.org/gems/travis/)
-  # - Enter the "encrypted value" below
+  # TODO update `api_key.secure`
+  # - Create a `public_repo` GitHub token. Go to: https://github.com/settings/tokens/new
+  # - Encrypt it: `travis encrypt 0123456789012345678901234567890123456789
+  # - Paste the output down here
   api_key:
         - secure: Ow/YGlhzIMhfjwSPVEu7AdJBDGsIq/fQ9/T/YG4QGwXSPS96SghS1872HNkGLEVuudFHbl24Xk7MtDQFeLN5fcQFM1sz3TjqAeHDaBb5YOppMkmcAt3qL0CAxXj9OjHRqv3o80kTsyVl0NCIxxLrJUOIllvG9+Tmsuuaqp3wK0Ijk2voYb16kY9Zx1Ui8jl5N4WuljCK/OwQfOQdvLT9bQFoiHGdxni35JzEGHw7NpALwm6PnLptQWn/DweAHY3lvrHea0brIjLf8hkN49hN120l+LL/wcYcky2NyIvu7UJLbZTOuZgS3BpfZtRCzcTmosejVhfymJcUbSDQbkBRsjDDAx7tcuN/u4EiC0utAyB8T+V3iCMjue0Ndvn+ZFi8h6GVmhi5OgAFYDfTn0yOexn6AihPSjNSXV3jGJ5M3gtT2kauNwRete6LZJK+d2pnzsQJ256nnuknJaJ2/jm9oAT429a/Ewyy+aebxERYYMDqd+Kk8+mCKk2nYGiw4ADJsxanu1bdAjcJ9Og8i1cpITnkFwhREVVGmleLlhkT6ekzrETJSuqA7KeffonlSMSbUV3d8oQHeYGZvnUJnJ+yaobUq2mmdzb1qDv23AdH/1mrf0Y7kNeiaVKBYaikm6MMd/KWQeG4eARZFBbv/lXkuRuSp0OpnIHAlgAAHJciKsM=
   file_glob: true
