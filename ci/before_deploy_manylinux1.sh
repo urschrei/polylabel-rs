@@ -37,6 +37,7 @@ mk_tarball() {
 
     cp /io/target/$TARGET/release/*.so $td
     cp -r /io/target/$TARGET/release/*.dSYM $td 2>/dev/null || :
+    cp /io/include/header.h $td
 
     pushd $td
     # release tarball will look like 'rust-everywhere-v1.2.3-x86_64-unknown-linux-gnu.tar.gz'

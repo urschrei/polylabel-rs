@@ -12,6 +12,8 @@ $ZIP = "$SRC_DIR\$($Env:CRATE_NAME)-$($Env:APPVEYOR_REPO_TAG_NAME)-$($Env:TARGET
 
 # TODO Update this to package the right artifacts
 Copy-Item "$SRC_DIR\target\$($Env:TARGET)\release\polylabel*" '.\'
+Copy-Item "$SRC_DIR\target\$($Env:TARGET)\release\deps\polylabel*" '.\'
+Copy-Item "$SRC_DIR\include\header.h" '.\'
 
 
 7z a "$ZIP" *

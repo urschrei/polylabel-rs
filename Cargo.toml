@@ -1,6 +1,6 @@
 [package]
 name = "polylabel"
-version = "1.0.37"
+version = "1.0.38"
 authors = ["Stephan Hügel <urschrei@gmail.com>"]
 description = "A Rust implementation of the Polylabel algorithm"
 readme = "README.md"
@@ -10,7 +10,7 @@ license = "MIT"
 
 [dependencies]
 libc = "0.2.15"
-geo = "0.4.3"
+geo = "0.4.5"
 num-traits = "0.1"
 
 [lib]

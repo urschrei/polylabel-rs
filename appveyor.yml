@@ -10,24 +10,20 @@ environment:
   # TODO feel free to delete targets/channels you don't need
   matrix:
     # Stable channel
-    # - TARGET: i686-pc-windows-msvc
-    #   CHANNEL: stable
-    # - TARGET: x86_64-pc-windows-msvc
-    #   CHANNEL: stable
-    - TARGET: x86_64-pc-windows-gnu
-      CHANNEL: stable
-    - TARGET: i686-pc-windows-gnu
-      CHANNEL: stable
+    - TARGET: i686-pc-windows-msvc
+      RUST_VERSION: stable
+    - TARGET: x86_64-pc-windows-msvc
+      RUST_VERSION: nightly
     # Beta channel
-    # - TARGET: i686-pc-windows-msvc
-    #   CHANNEL: beta
-    - TARGET: x86_64-pc-windows-gnu
-      CHANNEL: beta
+    - TARGET: i686-pc-windows-msvc
+      RUST_VERSION: beta
+    # - TARGET: x86_64-pc-windows-gnu
+    #   RUST_VERSION: beta
     # Nightly channel
-    # - TARGET: i686-pc-windows-msvc
-    #   CHANNEL: nightly
-    - TARGET: x86_64-pc-windows-gnu
-      CHANNEL: nightly
+    - TARGET: i686-pc-windows-msvc
+      RUST_VERSION: nightly
+    # - TARGET: x86_64-pc-windows-gnu
+    #   RUST_VERSION: nightly
 
 # Install Rust and Cargo
 install:
@@ -36,6 +32,10 @@ install:
         $Env:PATH += ';C:\msys64\mingw64\bin'
       } ElseIf ($Env:TARGET -eq 'i686-pc-windows-gnu') {
         $Env:PATH += ';C:\msys64\mingw32\bin'
+      } ElseIf ($Env:TARGET -eq 'i686-pc-windows-msvc') {
+        $Env:PATH += ';C:\msys64\mingw32\bin'
+      } ElseIf ($Env:TARGET -eq 'x86_64-pc-windows-msvc') {
+        $Env:PATH += ';C:\msys64\mingw64\bin'
       }
   - ps: if ($env:APPVEYOR_PULL_REQUEST_NUMBER -and $env:APPVEYOR_BUILD_NUMBER -ne ((Invoke-RestMethod `
         https://ci.appveyor.com/api/projects/$env:APPVEYOR_ACCOUNT_NAME/$env:APPVEYOR_PROJECT_SLUG/history?recordsNumber=50).builds | `
@@ -43,8 +43,9 @@ install:
           throw "There are newer queued builds for this pull request, failing early." }
   - curl -sSf -o rustup-init.exe https://win.rustup.rs/
   - rustup-init.exe -y --default-host %TARGET% --default-toolchain %RUST_VERSION%
-  - set PATH=%PATH%;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin
   - set PATH=%PATH%;C:\Users\appveyor\.cargo\bin
+  - set PATH=%PATH%;C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin
+  - set PATH=%PATH%
   - rustc -Vv
   - cargo -V
 
@@ -60,12 +61,24 @@ artifacts:
   - path: staging
 
 before_deploy:
-  # Generate artifacts for release
-  # build artifacts for generating a .def, needed by the MinGW Python build
-  - cargo rustc --target %TARGET% --release -- -C target-cpu=native -C link-args=-Wl,--out-implib,polylabel.a
-  - dlltool -z target\%TARGET%\release\polylabel.def --export-all-symbols target\%TARGET%\release\polylabel.dll
-  - dumpbin /exports target\%TARGET%\release\polylabel.dll
-  - ps: ci\before_deploy.ps1
+  # NEW Generate artifacts for release
+  - cargo rustc --target %TARGET% --release -- -Z unstable-options -C target-feature=+crt-static
+  # Cython build expects name.lib, not name.dll.lib
+  - cp target\%TARGET%\release\deps\polylabel.dll.lib target\%TARGET%\release\deps\polylabel.lib
+
+  # OLD build artifacts for generating a .def, needed by the MinGW Python build
+  # - cargo rustc --target %TARGET% --release -- -C target-cpu=native -C link-args=-Wl,--out-implib,polylabel.a
+  # - dlltool -z target\%TARGET%\release\polylabel.def --export-all-symbols target\%TARGET%\release\polylabel.dll
+  # - dir target\%TARGET%\release
+  # - appveyor PushArtifact target\%TARGET%\release\polylabel.def
+
+  - dir target\%TARGET%\release
+  - dir target\%TARGET%\release\deps
+  - dumpbin /exports target\%TARGET%\release\polylabel.dll > dumpbin_exports.txt
+  - dumpbin /dependents target\%TARGET%\release\polylabel.dll > dumpbin_dependents.txt
+  - appveyor PushArtifact dumpbin_exports.txt
+  - appveyor PushArtifact dumpbin_dependents.txt
+  - ps: ci\before_deploy_windows.ps1
 
 deploy:
   appveyor_repo_tag: true
@@ -80,7 +93,7 @@ deploy:
   prerelease: false
   on:
     appveyor_repo_tag: true
-    CHANNEL: stable
+    RUST_VERSION: nightly
 
 cache:
   - C:\Users\appveyor\.cargo\registry
