@@ -6,7 +6,7 @@ use self::libc::{c_void, c_double, size_t};
 use super::geo::{Point, Polygon, LineString};
 
 use super::polylabel;
-use super::num_traits::Float;
+use super::num_traits::{Float, Signed};
 
 /// Wrapper for a void pointer to a sequence of [`Array`](struct.Array.html)s, and the sequence length
 ///
@@ -35,7 +35,8 @@ pub struct Position {
 
 // convert a Polylabel result Point into values that can be sent across the FFI boundary
 impl<T> From<Point<T>> for Position
-    where T: Float
+where
+    T: Float + Signed,
 {
     fn from(point: Point<T>) -> Position {
         Position {
@@ -62,20 +63,20 @@ fn reconstitute2(arr: WrapperArray) -> Vec<Vec<[f64; 2]>> {
 /// - an interior rings [`WrapperArray`](struct.WrapperArray.html)
 /// - a tolerance `c_double`.
 #[no_mangle]
-pub extern "C" fn polylabel_ffi(outer: Array,
-                                inners: WrapperArray,
-                                tolerance: c_double)
-                                -> Position {
+pub extern "C" fn polylabel_ffi(
+    outer: Array,
+    inners: WrapperArray,
+    tolerance: c_double,
+) -> Position {
     let exterior: Vec<[f64; 2]> =
         unsafe { slice::from_raw_parts(outer.data as *mut [c_double; 2], outer.len).to_vec() };
     let interior: Vec<Vec<[f64; 2]>> = reconstitute2(inners);
-    let ls_ext = LineString(exterior
-                                .iter()
-                                .map(|e| Point::new(e[0], e[1]))
-                                .collect());
+    let ls_ext = LineString(exterior.iter().map(|e| Point::new(e[0], e[1])).collect());
     let ls_int: Vec<LineString<c_double>> = interior
         .iter()
-        .map(|vec| LineString(vec.iter().map(|e| Point::new(e[0], e[1])).collect()))
+        .map(|vec| {
+            LineString(vec.iter().map(|e| Point::new(e[0], e[1])).collect())
+        })
         .collect();
     let poly = Polygon::new(ls_ext, ls_int);
     polylabel(&poly, &tolerance).into()
@@ -118,10 +119,21 @@ mod tests {
     }
     #[test]
     fn test_ffi() {
-        let ext_vec = vec![[4.0, 1.0], [5.0, 2.0], [5.0, 3.0], [4.0, 4.0], [3.0, 4.0], [2.0, 3.0],
-                           [2.0, 2.0], [3.0, 1.0], [4.0, 1.0]];
-        let int_vec = vec![vec![[3.5, 3.5], [4.4, 2.0], [2.6, 2.0], [3.5, 3.5]],
-                           vec![[4.0, 3.0], [4.0, 3.2], [4.5, 3.2], [4.0, 3.0]]];
+        let ext_vec = vec![
+            [4.0, 1.0],
+            [5.0, 2.0],
+            [5.0, 3.0],
+            [4.0, 4.0],
+            [3.0, 4.0],
+            [2.0, 3.0],
+            [2.0, 2.0],
+            [3.0, 1.0],
+            [4.0, 1.0],
+        ];
+        let int_vec = vec![
+            vec![[3.5, 3.5], [4.4, 2.0], [2.6, 2.0], [3.5, 3.5]],
+            vec![[4.0, 3.0], [4.0, 3.2], [4.5, 3.2], [4.0, 3.0]],
+        ];
 
         let outer = gen_array(ext_vec);
         let inners = gen_wrapperarray(int_vec);

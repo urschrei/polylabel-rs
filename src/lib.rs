@@ -1,12 +1,11 @@
 #![doc(html_logo_url = "https://cdn.rawgit.com/urschrei/polylabel-rs/7a07336e85572eb5faaf0657c2383d7de5620cd8/ell.svg",
        html_root_url = "https://urschrei.github.io/polylabel-rs/")]
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
-use std::fmt::Debug;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
 extern crate num_traits;
-use self::num_traits::{Float, FromPrimitive};
+use self::num_traits::{Float, FromPrimitive, Signed};
 
 extern crate geo;
 use self::geo::{Point, Polygon};
@@ -20,12 +19,15 @@ mod ffi;
 pub use ffi::{polylabel_ffi, Array, WrapperArray, Position};
 
 #[allow(dead_code)]
-pub extern "C" fn spare() { println!(""); }
+pub extern "C" fn spare() {
+    println!("");
+}
 
 // A helper struct for `polylabel`
 #[derive(Debug)]
 struct Cell<T>
-    where T: Float
+where
+    T: Float + Signed,
 {
     // Centroid coordinates
     x: T,
@@ -39,7 +41,8 @@ struct Cell<T>
 }
 
 impl<T> Cell<T>
-    where T: Float
+where
+    T: Float + Signed,
 {
     /// Creates a new Cell
     pub fn new(x: T, y: T, h: T, distance: T, max_distance: T) -> Cell<T> {
@@ -54,27 +57,33 @@ impl<T> Cell<T>
 }
 
 impl<T> Ord for Cell<T>
-    where T: Float
+where
+    T: Float + Signed,
 {
     fn cmp(&self, other: &Cell<T>) -> std::cmp::Ordering {
-        self.max_distance
-            .partial_cmp(&other.max_distance)
-            .unwrap()
+        self.max_distance.partial_cmp(&other.max_distance).unwrap()
     }
 }
 impl<T> PartialOrd for Cell<T>
-    where T: Float
+where
+    T: Float + Signed,
 {
     fn partial_cmp(&self, other: &Cell<T>) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
-impl<T> Eq for Cell<T> where T: Float {}
+impl<T> Eq for Cell<T>
+where
+    T: Float + Signed,
+{
+}
 impl<T> PartialEq for Cell<T>
-    where T: Float
+where
+    T: Float + Signed,
 {
     fn eq(&self, other: &Cell<T>) -> bool
-        where T: Float
+    where
+        T: Float,
     {
         self.max_distance == other.max_distance
     }
@@ -83,7 +92,8 @@ impl<T> PartialEq for Cell<T>
 // Signed distance from a Cell's centroid to a Polygon's outline
 // Returned value is negative if the point is outside the polygon's exterior ring
 fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
-    where T: Float
+where
+    T: Float,
 {
     let point = Point::new(*x, *y);
     let inside = polygon.contains(&point);
@@ -94,37 +104,46 @@ fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
 
 // Add a new quadtree node to the binary heap
 fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &Polygon<T>)
-    where T: Float
+where
+    T: Float + Signed,
 {
     let two = T::one() + T::one();
     // 1
     let mut new_dist = signed_distance(&(cell.x - *nh), &(cell.y - *nh), polygon);
-    mpq.push(Cell::new(cell.x - *nh,
-                       cell.y - *nh,
-                       *nh,
-                       new_dist,
-                       new_dist + *nh * two.sqrt()));
+    mpq.push(Cell::new(
+        cell.x - *nh,
+        cell.y - *nh,
+        *nh,
+        new_dist,
+        new_dist + *nh * two.sqrt(),
+    ));
     // 2
     new_dist = signed_distance(&(cell.x + *nh), &(cell.y - *nh), polygon);
-    mpq.push(Cell::new(cell.x + *nh,
-                       cell.y - *nh,
-                       *nh,
-                       new_dist,
-                       new_dist + *nh * two.sqrt()));
+    mpq.push(Cell::new(
+        cell.x + *nh,
+        cell.y - *nh,
+        *nh,
+        new_dist,
+        new_dist + *nh * two.sqrt(),
+    ));
     // 3
     new_dist = signed_distance(&(cell.x - *nh), &(cell.y + *nh), polygon);
-    mpq.push(Cell::new(cell.x - *nh,
-                       cell.y + *nh,
-                       *nh,
-                       new_dist,
-                       new_dist + *nh * two.sqrt()));
+    mpq.push(Cell::new(
+        cell.x - *nh,
+        cell.y + *nh,
+        *nh,
+        new_dist,
+        new_dist + *nh * two.sqrt(),
+    ));
     // 4
     new_dist = signed_distance(&(cell.x + *nh), &(cell.y + *nh), polygon);
-    mpq.push(Cell::new(cell.x + *nh,
-                       cell.y + *nh,
-                       *nh,
-                       new_dist,
-                       new_dist + *nh * two.sqrt()));
+    mpq.push(Cell::new(
+        cell.x + *nh,
+        cell.y + *nh,
+        *nh,
+        new_dist,
+        new_dist + *nh * two.sqrt(),
+    ));
 }
 
 
@@ -161,7 +180,8 @@ fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &
 /// ```
 ///
 pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
-    where T: Float + FromPrimitive + Debug
+where
+    T: Float + FromPrimitive + Signed,
 {
     // special case for degenerate polygons
     if polygon.area() == T::zero() {
@@ -198,9 +218,11 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
     };
 
     // special case for rectangular polygons
-    let bbox_cell_dist = signed_distance(&(bbox.xmin + width / two),
-                                         &(bbox.ymin + height / two),
-                                         polygon);
+    let bbox_cell_dist = signed_distance(
+        &(bbox.xmin + width / two),
+        &(bbox.ymin + height / two),
+        polygon,
+    );
     let bbox_cell = Cell {
         x: bbox.xmin + width / two,
         y: bbox.ymin + height / two,
@@ -223,12 +245,12 @@ pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
         while y < bbox.ymax {
             let latest_dist = signed_distance(&(x + h), &(y + h), polygon);
             cell_queue.push(Cell {
-                                x: x + h,
-                                y: y + h,
-                                h: h,
-                                distance: latest_dist,
-                                max_distance: latest_dist + h * two.sqrt(),
-                            });
+                x: x + h,
+                y: y + h,
+                h: h,
+                distance: latest_dist,
+                max_distance: latest_dist + h * two.sqrt(),
+            });
             y = y + cell_size;
         }
         x = x + cell_size;
@@ -286,8 +308,15 @@ mod tests {
     #[test]
     fn polygon_l_test() {
         // an L shape
-        let coords = vec![(0.0, 0.0), (4.0, 0.0), (4.0, 1.0), (1.0, 1.0), (1.0, 4.0), (0.0, 4.0),
-                          (0.0, 0.0)];
+        let coords = vec![
+            (0.0, 0.0),
+            (4.0, 0.0),
+            (4.0, 1.0),
+            (1.0, 1.0),
+            (1.0, 4.0),
+            (0.0, 4.0),
+            (0.0, 0.0),
+        ];
         let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
         let poly = Polygon::new(ls, vec![]);
         let res = polylabel(&poly, &0.10);
