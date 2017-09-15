@@ -282,16 +282,13 @@ where
 mod tests {
     use std::collections::BinaryHeap;
     use super::{polylabel, Cell};
-    extern crate libc;
-    extern crate geo;
-    use geo::{Point, Polygon, LineString};
+    use geo::{Point, Polygon};
     use geo::contains::Contains;
     #[test]
     // polygons are those used in Shapely's tests
     fn test_polylabel() {
         let coords = include!("poly1.rs");
-        let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
-        let poly = Polygon::new(ls, vec![]);
+        let poly = Polygon::new(coords.into(), vec![]);
         let res = polylabel(&poly, &10.000);
         assert_eq!(res, Point::new(59.35615556364569, 121.83919629746435));
     }
@@ -300,8 +297,7 @@ mod tests {
     // relevant because the centroid lies outside the polygon in this case
     fn test_concave() {
         let coords = include!("poly2.rs");
-        let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
-        let poly = Polygon::new(ls, vec![]);
+        let poly = Polygon::new(coords.into(), vec![]);
         let res = polylabel(&poly, &1.0);
         assert!(poly.contains(&res));
     }
@@ -317,24 +313,21 @@ mod tests {
             (0.0, 4.0),
             (0.0, 0.0),
         ];
-        let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
-        let poly = Polygon::new(ls, vec![]);
+        let poly = Polygon::new(coords.into(), vec![]);
         let res = polylabel(&poly, &0.10);
         assert_eq!(res, Point::new(0.5625, 0.5625));
     }
     #[test]
     fn degenerate_polygon_test() {
         let a_coords = vec![(0.0, 0.0), (1.0, 0.0), (2.0, 0.0), (0.0, 0.0)];
-        let a_ls = LineString(a_coords.iter().map(|e| Point::new(e.0, e.1)).collect());
-        let a_poly = Polygon::new(a_ls, vec![]);
+        let a_poly = Polygon::new(a_coords.into(), vec![]);
         let a_res = polylabel(&a_poly, &1.0);
         assert_eq!(a_res, Point::new(0.0, 0.0));
     }
     #[test]
     fn degenerate_polygon_test_2() {
         let b_coords = vec![(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)];
-        let b_ls = LineString(b_coords.iter().map(|e| Point::new(e.0, e.1)).collect());
-        let b_poly = Polygon::new(b_ls, vec![]);
+        let b_poly = Polygon::new(b_coords.into(), vec![]);
         let b_res = polylabel(&b_poly, &1.0);
         assert_eq!(b_res, Point::new(0.0, 0.0));
     }
