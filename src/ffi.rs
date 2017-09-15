@@ -10,7 +10,7 @@ use super::num_traits::{Float, Signed};
 
 /// Wrapper for a void pointer to a sequence of [`Array`](struct.Array.html)s, and the sequence length
 ///
-/// Used for inner Polygon rings
+/// Each sequence entry represents an inner Polygon ring.
 #[repr(C)]
 pub struct WrapperArray {
     pub data: *const Array,
@@ -19,7 +19,7 @@ pub struct WrapperArray {
 
 /// Wrapper for a void pointer to a sequence of 2-element arrays representing points, and the sequence length
 ///
-/// Used for outer Polygon rings. `data` is a `Vec<[c_double; 2]>`
+/// Used for the outer Polygon shell. `data` is a `Vec<[c_double; 2]>`.
 #[repr(C)]
 pub struct Array {
     pub data: *const c_void,
