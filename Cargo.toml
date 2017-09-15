@@ -10,7 +10,7 @@ license = "MIT"
 
 [dependencies]
 libc = "0.2.29"
-geo = "0.4.12"
+geo = "0.6.0"
 num-traits = "0.1"
 
 [lib]
