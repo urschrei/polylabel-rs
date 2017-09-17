@@ -27,8 +27,7 @@ let coords = vec![
     (0.0, 4.0),
     (0.0, 0.0)
 ];
-let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
-let poly = Polygon::new(ls, vec![]);
+let poly = Polygon::new(coords.into(), vec![]);
 let label_pos = polylabel(&poly, &0.10);
 // Point(0.5625, 0.5625)
 ```
