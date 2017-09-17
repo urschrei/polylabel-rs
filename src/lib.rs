@@ -168,8 +168,7 @@ where
 ///    (0.0, 4.0),
 ///    (0.0, 0.0)];
 ///
-/// let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
-/// let poly = Polygon::new(ls, vec![]);
+/// let poly = Polygon::new(coords.into(), vec![]);
 ///
 /// // Its centroid lies outside the polygon
 /// assert_eq!(poly.centroid(), Point::new(1.3571428571428572, 1.3571428571428572));
