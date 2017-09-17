@@ -18,6 +18,7 @@ use self::geo::algorithm::contains::Contains;
 mod ffi;
 pub use ffi::{polylabel_ffi, Array, WrapperArray, Position};
 
+#[doc(hidden)]
 #[allow(dead_code)]
 pub extern "C" fn spare() {
     println!("");
@@ -44,8 +45,7 @@ impl<T> Cell<T>
 where
     T: Float + Signed,
 {
-    /// Creates a new Cell
-    pub fn new(x: T, y: T, h: T, distance: T, max_distance: T) -> Cell<T> {
+    fn new(x: T, y: T, h: T, distance: T, max_distance: T) -> Cell<T> {
         Cell {
             x: x,
             y: y,
@@ -205,9 +205,9 @@ where
     if cell_size == T::zero() {
         return Point::new(bbox.xmin, bbox.ymin);
     }
-    let mut h: T = cell_size / two;
-    let distance: T = signed_distance(&centroid.x(), &centroid.y(), polygon);
-    let max_distance: T = distance + T::zero() * two.sqrt();
+    let mut h = cell_size / two;
+    let distance = signed_distance(&centroid.x(), &centroid.y(), polygon);
+    let max_distance = distance + T::zero() * two.sqrt();
 
     let mut best_cell = Cell {
         x: centroid.x(),
