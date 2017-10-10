@@ -52,7 +52,7 @@ The function returns a [struct](https://docs.rs/polylabel/1.0.3/polylabel/struct
 A Python example is available in [`ffi.py`](ffi.py)
 
 ## Performance
-Finding a label position on a ~9k-point polygon using a tolerance of `10.0` takes around 5 ms on a 1.8 GHz Core i7 processor. Higher tolerances will significantly increase this time; finding a position on the same polygon using a tolerance of `1.0` takes around 80 ms, though in general this level of precision isn't required.
+Finding a label position on a ~9k-vertex polygon using a tolerance of `10.0` takes around 5 ms on a 1.8 GHz Core i7 processor. Higher tolerances will significantly increase this time; finding a position on the same polygon using a tolerance of `1.0` takes around 80 ms, though in general this level of precision isn't required.
 
 # Binaries
 Binary libs for:
