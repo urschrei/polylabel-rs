@@ -24,7 +24,7 @@ pub extern "C" fn spare() {
     println!("");
 }
 
-// A helper struct for `polylabel`
+/// A helper struct for `polylabel`, representing one of four Quadtree cells
 #[derive(Debug)]
 struct Cell<T>
 where
@@ -89,8 +89,8 @@ where
     }
 }
 
-// Signed distance from a Cell's centroid to a Polygon's outline
-// Returned value is negative if the point is outside the polygon's exterior ring
+/// Signed distance from a Cell's centroid to a Polygon's outline
+/// Returned value is negative if the point is outside the polygon's exterior ring
 fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
 where
     T: Float,
@@ -102,7 +102,7 @@ where
     if inside { distance } else { -distance }
 }
 
-// Add a new quadtree node to the binary heap
+/// Add a new Quadtree node made up of four `Cell`s to the binary heap
 fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &Polygon<T>)
 where
     T: Float + Signed,
