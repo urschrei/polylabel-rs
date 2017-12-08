@@ -26,7 +26,7 @@ pub extern "C" fn spare() {
 
 /// A helper struct for `polylabel`, representing one of four Quadtree cells
 #[derive(Debug)]
-struct Cell<T>
+struct Qcell<T>
 where
     T: Float + Signed,
 {
@@ -41,12 +41,12 @@ where
     max_distance: T,
 }
 
-impl<T> Cell<T>
+impl<T> Qcell<T>
 where
     T: Float + Signed,
 {
-    fn new(x: T, y: T, h: T, distance: T, max_distance: T) -> Cell<T> {
-        Cell {
+    fn new(x: T, y: T, h: T, distance: T, max_distance: T) -> Qcell<T> {
+        Qcell {
             x: x,
             y: y,
             h: h,
@@ -56,32 +56,32 @@ where
     }
 }
 
-impl<T> Ord for Cell<T>
+impl<T> Ord for Qcell<T>
 where
     T: Float + Signed,
 {
-    fn cmp(&self, other: &Cell<T>) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Qcell<T>) -> std::cmp::Ordering {
         self.max_distance.partial_cmp(&other.max_distance).unwrap()
     }
 }
-impl<T> PartialOrd for Cell<T>
+impl<T> PartialOrd for Qcell<T>
 where
     T: Float + Signed,
 {
-    fn partial_cmp(&self, other: &Cell<T>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Qcell<T>) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
-impl<T> Eq for Cell<T>
+impl<T> Eq for Qcell<T>
 where
     T: Float + Signed,
 {
 }
-impl<T> PartialEq for Cell<T>
+impl<T> PartialEq for Qcell<T>
 where
     T: Float + Signed,
 {
-    fn eq(&self, other: &Cell<T>) -> bool
+    fn eq(&self, other: &Qcell<T>) -> bool
     where
         T: Float,
     {
@@ -103,14 +103,14 @@ where
 }
 
 /// Add a new Quadtree node made up of four `Cell`s to the binary heap
-fn add_quad<T>(mpq: &mut BinaryHeap<Cell<T>>, cell: &Cell<T>, nh: &T, polygon: &Polygon<T>)
+fn add_quad<T>(mpq: &mut BinaryHeap<Qcell<T>>, cell: &Qcell<T>, nh: &T, polygon: &Polygon<T>)
 where
     T: Float + Signed,
 {
     let two = T::one() + T::one();
     // 1
     let mut new_dist = signed_distance(&(cell.x - *nh), &(cell.y - *nh), polygon);
-    mpq.push(Cell::new(
+    mpq.push(Qcell::new(
         cell.x - *nh,
         cell.y - *nh,
         *nh,
@@ -119,7 +119,7 @@ where
     ));
     // 2
     new_dist = signed_distance(&(cell.x + *nh), &(cell.y - *nh), polygon);
-    mpq.push(Cell::new(
+    mpq.push(Qcell::new(
         cell.x + *nh,
         cell.y - *nh,
         *nh,
@@ -128,7 +128,7 @@ where
     ));
     // 3
     new_dist = signed_distance(&(cell.x - *nh), &(cell.y + *nh), polygon);
-    mpq.push(Cell::new(
+    mpq.push(Qcell::new(
         cell.x - *nh,
         cell.y + *nh,
         *nh,
@@ -137,7 +137,7 @@ where
     ));
     // 4
     new_dist = signed_distance(&(cell.x + *nh), &(cell.y + *nh), polygon);
-    mpq.push(Cell::new(
+    mpq.push(Qcell::new(
         cell.x + *nh,
         cell.y + *nh,
         *nh,
@@ -208,7 +208,7 @@ where
     let distance = signed_distance(&centroid.x(), &centroid.y(), polygon);
     let max_distance = distance + T::zero() * two.sqrt();
 
-    let mut best_cell = Cell {
+    let mut best_cell = Qcell {
         x: centroid.x(),
         y: centroid.y(),
         h: T::zero(),
@@ -222,7 +222,7 @@ where
         &(bbox.ymin + height / two),
         polygon,
     );
-    let bbox_cell = Cell {
+    let bbox_cell = Qcell {
         x: bbox.xmin + width / two,
         y: bbox.ymin + height / two,
         h: T::zero(),
@@ -235,7 +235,7 @@ where
     }
 
     // Priority queue
-    let mut cell_queue: BinaryHeap<Cell<T>> = BinaryHeap::new();
+    let mut cell_queue: BinaryHeap<Qcell<T>> = BinaryHeap::new();
     // Build an initial quadtree node, which covers the Polygon
     let mut x = bbox.xmin;
     let mut y;
@@ -243,7 +243,7 @@ where
         y = bbox.ymin;
         while y < bbox.ymax {
             let latest_dist = signed_distance(&(x + h), &(y + h), polygon);
-            cell_queue.push(Cell {
+            cell_queue.push(Qcell {
                 x: x + h,
                 y: y + h,
                 h: h,
@@ -280,7 +280,7 @@ where
 #[cfg(test)]
 mod tests {
     use std::collections::BinaryHeap;
-    use super::{polylabel, Cell};
+    use super::{polylabel, Qcell};
     use geo::{Point, Polygon};
     use geo::contains::Contains;
     #[test]
@@ -333,21 +333,21 @@ mod tests {
     #[test]
     // Is our priority queue behaving as it should?
     fn test_queue() {
-        let a = Cell {
+        let a = Qcell {
             x: 1.0,
             y: 2.0,
             h: 3.0,
             distance: 4.0,
             max_distance: 8.0,
         };
-        let b = Cell {
+        let b = Qcell {
             x: 1.0,
             y: 2.0,
             h: 3.0,
             distance: 4.0,
             max_distance: 7.0,
         };
-        let c = Cell {
+        let c = Qcell {
             x: 1.0,
             y: 2.0,
             h: 3.0,
