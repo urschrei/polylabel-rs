@@ -24,15 +24,14 @@ pub extern "C" fn spare() {
     println!("");
 }
 
-/// A helper struct for `polylabel`, representing one of four Quadtree cells
+/// Represention of a Quadtree cell
+/// x and y represent the 
 #[derive(Debug)]
 struct Qcell<T>
 where
     T: Float + Signed,
 {
-    // Centroid coordinates
-    x: T,
-    y: T,
+    centroid: Point<T>,
     // Half the cell size
     h: T,
     // Distance from centroid to polygon
@@ -47,8 +46,7 @@ where
 {
     fn new(x: T, y: T, h: T, distance: T, max_distance: T) -> Qcell<T> {
         Qcell {
-            x: x,
-            y: y,
+            centroid: Point::new(x, y),
             h: h,
             distance: distance,
             max_distance: max_distance,
@@ -89,7 +87,7 @@ where
     }
 }
 
-/// Signed distance from a Cell's centroid to a Polygon's outline
+/// Signed distance from a Qcell's centroid to a Polygon's outline
 /// Returned value is negative if the point is outside the polygon's exterior ring
 fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
 where
@@ -102,44 +100,44 @@ where
     if inside { distance } else { -distance }
 }
 
-/// Add a new Quadtree node made up of four `Cell`s to the binary heap
+/// Add a new Quadtree node made up of four `Qcell`s to the binary heap
 fn add_quad<T>(mpq: &mut BinaryHeap<Qcell<T>>, cell: &Qcell<T>, nh: &T, polygon: &Polygon<T>)
 where
     T: Float + Signed,
 {
     let two = T::one() + T::one();
     // 1
-    let mut new_dist = signed_distance(&(cell.x - *nh), &(cell.y - *nh), polygon);
+    let mut new_dist = signed_distance(&(cell.centroid.x() - *nh), &(cell.centroid.y() - *nh), polygon);
     mpq.push(Qcell::new(
-        cell.x - *nh,
-        cell.y - *nh,
+        cell.centroid.x() - *nh,
+        cell.centroid.y() - *nh,
         *nh,
         new_dist,
         new_dist + *nh * two.sqrt(),
     ));
     // 2
-    new_dist = signed_distance(&(cell.x + *nh), &(cell.y - *nh), polygon);
+    new_dist = signed_distance(&(cell.centroid.x() + *nh), &(cell.centroid.y() - *nh), polygon);
     mpq.push(Qcell::new(
-        cell.x + *nh,
-        cell.y - *nh,
+        cell.centroid.x() + *nh,
+        cell.centroid.y() - *nh,
         *nh,
         new_dist,
         new_dist + *nh * two.sqrt(),
     ));
     // 3
-    new_dist = signed_distance(&(cell.x - *nh), &(cell.y + *nh), polygon);
+    new_dist = signed_distance(&(cell.centroid.x() - *nh), &(cell.centroid.y() + *nh), polygon);
     mpq.push(Qcell::new(
-        cell.x - *nh,
-        cell.y + *nh,
+        cell.centroid.x() - *nh,
+        cell.centroid.y() + *nh,
         *nh,
         new_dist,
         new_dist + *nh * two.sqrt(),
     ));
     // 4
-    new_dist = signed_distance(&(cell.x + *nh), &(cell.y + *nh), polygon);
+    new_dist = signed_distance(&(cell.centroid.x() + *nh), &(cell.centroid.y() + *nh), polygon);
     mpq.push(Qcell::new(
-        cell.x + *nh,
-        cell.y + *nh,
+        cell.centroid.x() + *nh,
+        cell.centroid.y() + *nh,
         *nh,
         new_dist,
         new_dist + *nh * two.sqrt(),
@@ -184,9 +182,8 @@ where
 {
     // special case for degenerate polygons
     if polygon.area() == T::zero() {
-        // best_cell = Cell {
-        //     x: polygon.exterior.0[0].x(),
-        //     y: polygon.exterior.0[0].y(),
+        // best_cell = Qcell {
+        //     centroid = Point::new(polygon.exterior.0[0].x(), polygon.exterior.0[0].y())
         //     h: T::zero(),
         //     distance: distance,
         //     max_distance: max_distance
@@ -209,8 +206,7 @@ where
     let max_distance = distance + T::zero() * two.sqrt();
 
     let mut best_cell = Qcell {
-        x: centroid.x(),
-        y: centroid.y(),
+        centroid: Point::new(centroid.x(), centroid.y()),
         h: T::zero(),
         distance: distance,
         max_distance: max_distance,
@@ -223,8 +219,7 @@ where
         polygon,
     );
     let bbox_cell = Qcell {
-        x: bbox.xmin + width / two,
-        y: bbox.ymin + height / two,
+        centroid: Point::new(bbox.xmin + width / two, bbox.ymin + height / two),
         h: T::zero(),
         distance: bbox_cell_dist,
         max_distance: bbox_cell_dist + T::zero() * two.sqrt(),
@@ -244,8 +239,7 @@ where
         while y < bbox.ymax {
             let latest_dist = signed_distance(&(x + h), &(y + h), polygon);
             cell_queue.push(Qcell {
-                x: x + h,
-                y: y + h,
+                centroid: Point::new(x + h, y + h),
                 h: h,
                 distance: latest_dist,
                 max_distance: latest_dist + h * two.sqrt(),
@@ -259,8 +253,7 @@ where
         let cell = cell_queue.pop().unwrap();
         // Update the best cell if we find a cell with greater distance
         if cell.distance > best_cell.distance {
-            best_cell.x = cell.x;
-            best_cell.y = cell.y;
+            best_cell.centroid = Point::new(cell.centroid.x(), cell.centroid.y());
             best_cell.h = cell.h;
             best_cell.distance = cell.distance;
             best_cell.max_distance = cell.max_distance;
@@ -274,7 +267,7 @@ where
         add_quad(&mut cell_queue, &cell, &h, polygon);
     }
     // We've exhausted the queue, so return the best solution we've found
-    Point::new(best_cell.x, best_cell.y)
+    Point::new(best_cell.centroid.x(), best_cell.centroid.y())
 }
 
 #[cfg(test)]
@@ -334,22 +327,19 @@ mod tests {
     // Is our priority queue behaving as it should?
     fn test_queue() {
         let a = Qcell {
-            x: 1.0,
-            y: 2.0,
+            centroid: Point::new(1.0, 2.0),
             h: 3.0,
             distance: 4.0,
             max_distance: 8.0,
         };
         let b = Qcell {
-            x: 1.0,
-            y: 2.0,
+            centroid: Point::new(1.0, 2.0),
             h: 3.0,
             distance: 4.0,
             max_distance: 7.0,
         };
         let c = Qcell {
-            x: 1.0,
-            y: 2.0,
+            centroid: Point::new(1.0, 2.0),
             h: 3.0,
             distance: 4.0,
             max_distance: 9.0,
