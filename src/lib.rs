@@ -26,7 +26,6 @@ pub extern "C" fn spare() {
 }
 
 /// Represention of a Quadtree cell
-/// x and y represent the 
 #[derive(Debug)]
 struct Qcell<T>
 where
