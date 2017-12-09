@@ -1,6 +1,6 @@
 [package]
 name = "polylabel"
-version = "1.0.41"
+version = "1.0.42"
 authors = ["Stephan Hügel <urschrei@gmail.com>"]
 description = "A Rust implementation of the Polylabel algorithm"
 readme = "README.md"
