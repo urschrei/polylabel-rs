@@ -8,7 +8,7 @@ use super::geo::{Point, Polygon, LineString};
 use super::polylabel;
 use super::num_traits::{Float, Signed};
 
-/// Wrapper for a void pointer to a sequence of [`Array`](struct.Array.html)s, and the sequence length
+/// Wrapper for a void pointer to a sequence of [`Array`](struct.Array.html)s, and the sequence length. Used for FFI.
 ///
 /// Each sequence entry represents an inner Polygon ring.
 #[repr(C)]
@@ -17,7 +17,7 @@ pub struct WrapperArray {
     pub len: size_t,
 }
 
-/// Wrapper for a void pointer to a sequence of 2-element arrays representing points, and the sequence length
+/// Wrapper for a void pointer to a sequence of 2-element arrays representing points, and the sequence length. Used for FFI.
 ///
 /// Used for the outer Polygon shell. `data` is a `Vec<[c_double; 2]>`.
 #[repr(C)]
