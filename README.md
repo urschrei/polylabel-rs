@@ -38,7 +38,7 @@ https://docs.rs/polylabel
 # FFI
 Call `polylabel_ffi` with the following three mandatory arguments:
 - [`Array`](https://docs.rs/polylabel/1.0.3/polylabel/struct.Array.html) (a struct with two fields):
-    - `data`: a void pointer to an array of two-element `c_double` arrays, the exterior Polygon shell)
+    - `data`: a void pointer to an array of two-element `c_double` arrays, each of which represents a point on the exterior Polygon shell)
     - `len`: the length of the `data` array, a `size_t`
 - [`WrapperArray`](https://docs.rs/polylabel/1.0.3/polylabel/struct.WrapperArray.html) (a struct with two fields):
     - `data`: a void pointer to an array of `Array`s, each entry representing an interior Polygon ring. Empty if there are no rings.
