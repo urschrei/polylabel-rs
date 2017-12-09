@@ -1,6 +1,7 @@
 #![doc(html_logo_url = "https://cdn.rawgit.com/urschrei/polylabel-rs/7a07336e85572eb5faaf0657c2383d7de5620cd8/ell.svg",
        html_root_url = "https://urschrei.github.io/polylabel-rs/")]
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
+//! for finding the optimum position of a polygon label.
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
