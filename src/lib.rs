@@ -133,7 +133,6 @@ fn add_quad<T>(
     }
 }
 
-
 /// Calculate a Polygon's ideal label position by calculating its ✨pole of inaccessibility✨
 ///
 /// The calculation uses an [iterative grid-based algorithm](https://github.com/mapbox/polylabel#how-the-algorithm-works).
