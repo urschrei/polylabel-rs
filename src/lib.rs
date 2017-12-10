@@ -25,15 +25,16 @@ pub extern "C" fn spare() {
     println!("");
 }
 
-/// Represention of a Quadtree cell
+/// Represention of a Quadtree node's cells. A node contains four Qcells.
 #[derive(Debug)]
 struct Qcell<T>
 where
     T: Float + Signed,
 {
+    // The cell's centroid
     centroid: Point<T>,
-    // Half the cell size
-    h: T,
+    // Half of the parent node's extent
+    extent: T,
     // Distance from centroid to polygon
     distance: T,
     // Maximum distance to polygon within a cell
@@ -47,7 +48,7 @@ where
     fn new(x: T, y: T, h: T, distance: T, max_distance: T) -> Qcell<T> {
         Qcell {
             centroid: Point::new(x, y),
-            h: h,
+            extent: h,
             distance: distance,
             max_distance: max_distance,
         }
@@ -209,7 +210,7 @@ where
     );
     let bbox_cell = Qcell {
         centroid: Point::new(bbox.xmin + width / two, bbox.ymin + height / two),
-        h: T::zero(),
+        extent: T::zero(),
         distance: bbox_cell_dist,
         max_distance: bbox_cell_dist + T::zero() * two.sqrt(),
     };
@@ -229,7 +230,7 @@ where
             let latest_dist = signed_distance(&(x + h), &(y + h), polygon);
             cell_queue.push(Qcell {
                 centroid: Point::new(x + h, y + h),
-                h: h,
+                extent: h,
                 distance: latest_dist,
                 max_distance: latest_dist + h * two.sqrt(),
             });
@@ -243,7 +244,7 @@ where
         // Update the best cell if we find a cell with greater distance
         if cell.distance > best_cell.distance {
             best_cell.centroid = Point::new(cell.centroid.x(), cell.centroid.y());
-            best_cell.h = cell.h;
+            best_cell.extent = cell.extent;
             best_cell.distance = cell.distance;
             best_cell.max_distance = cell.max_distance;
         }
@@ -252,7 +253,7 @@ where
             continue;
         }
         // Otherwise, add a new quadtree node and start again
-        h = cell.h / two;
+        h = cell.extent / two;
         add_quad(&mut cell_queue, &cell, &h, polygon);
     }
     // We've exhausted the queue, so return the best solution we've found
@@ -317,19 +318,19 @@ mod tests {
     fn test_queue() {
         let a = Qcell {
             centroid: Point::new(1.0, 2.0),
-            h: 3.0,
+            extent: 3.0,
             distance: 4.0,
             max_distance: 8.0,
         };
         let b = Qcell {
             centroid: Point::new(1.0, 2.0),
-            h: 3.0,
+            extent: 3.0,
             distance: 4.0,
             max_distance: 7.0,
         };
         let c = Qcell {
             centroid: Point::new(1.0, 2.0),
-            h: 3.0,
+            extent: 3.0,
             distance: 4.0,
             max_distance: 9.0,
         };
