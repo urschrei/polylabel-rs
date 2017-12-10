@@ -272,7 +272,7 @@ where
             continue;
         }
         // Otherwise, add a new quadtree node and start again
-        h = cell.h / two;
+        h = cell.extent / two;
         add_quad(&mut cell_queue, &cell, &h, polygon, &mut nodes);
     }
     // We've exhausted the queue, so return the best solution we've found
