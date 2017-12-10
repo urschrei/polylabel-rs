@@ -1,9 +1,9 @@
 use std::slice;
 
 extern crate libc;
-use self::libc::{c_void, c_double, size_t};
+use self::libc::{c_double, c_void, size_t};
 
-use super::geo::{Point, Polygon, LineString};
+use super::geo::{LineString, Point, Polygon};
 
 use super::polylabel;
 use super::num_traits::{Float, Signed};
@@ -68,15 +68,14 @@ pub extern "C" fn polylabel_ffi(
     inners: WrapperArray,
     tolerance: c_double,
 ) -> Position {
-    let exterior: Vec<[f64; 2]> =
-        unsafe { slice::from_raw_parts(outer.data as *mut [c_double; 2], outer.len).to_vec() };
+    let exterior: Vec<[f64; 2]> = unsafe {
+        slice::from_raw_parts(outer.data as *mut [c_double; 2], outer.len).to_vec()
+    };
     let interior: Vec<Vec<[f64; 2]>> = reconstitute2(inners);
     let ls_ext = LineString(exterior.iter().map(|e| Point::new(e[0], e[1])).collect());
     let ls_int: Vec<LineString<c_double>> = interior
         .iter()
-        .map(|vec| {
-            LineString(vec.iter().map(|e| Point::new(e[0], e[1])).collect())
-        })
+        .map(|vec| LineString(vec.iter().map(|e| Point::new(e[0], e[1])).collect()))
         .collect();
     let poly = Polygon::new(ls_ext, ls_int);
     polylabel(&poly, &tolerance).into()
@@ -84,7 +83,7 @@ pub extern "C" fn polylabel_ffi(
 
 #[cfg(test)]
 mod tests {
-    use super::{Array, WrapperArray, polylabel_ffi, reconstitute2};
+    use super::{polylabel_ffi, Array, WrapperArray, reconstitute2};
     use super::libc::{c_void, size_t};
     use geo::Point;
     use std::mem;

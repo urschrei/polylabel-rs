@@ -17,7 +17,7 @@ use self::geo::algorithm::centroid::Centroid;
 use self::geo::algorithm::contains::Contains;
 
 mod ffi;
-pub use ffi::{polylabel_ffi, Array, WrapperArray, Position};
+pub use ffi::{polylabel_ffi, Array, Position, WrapperArray};
 
 #[doc(hidden)]
 #[allow(dead_code)]
@@ -97,7 +97,11 @@ where
     let inside = polygon.contains(&point);
     // Use LineString distance, because Polygon distance returns 0.0 for inside
     let distance = point.distance(&polygon.exterior);
-    if inside { distance } else { -distance }
+    if inside {
+        distance
+    } else {
+        -distance
+    }
 }
 
 /// Add a new Quadtree node made up of four `Qcell`s to the binary heap
@@ -117,8 +121,7 @@ fn add_quad<T>(
         (centroid_x + *new_height, centroid_y - *new_height),
         (centroid_x - *new_height, centroid_y + *new_height),
         (centroid_x + *new_height, centroid_y + *new_height),
-    ]
-    {
+    ] {
         let mut new_dist = signed_distance(&combo.0, &combo.1, polygon);
         mpq.push(Qcell::new(
             combo.0,
