@@ -194,12 +194,13 @@ where
     let distance = signed_distance(&centroid.x(), &centroid.y(), polygon);
     let max_distance = distance + T::zero() * two.sqrt();
 
-    let mut best_cell = Qcell {
-        centroid: Point::new(centroid.x(), centroid.y()),
-        h: T::zero(),
-        distance: distance,
-        max_distance: max_distance,
-    };
+    let mut best_cell = Qcell::new(
+        centroid.x(),
+        centroid.y(),
+        T::zero(),
+        distance,
+        max_distance,
+    );
 
     // special case for rectangular polygons
     let bbox_cell_dist = signed_distance(
