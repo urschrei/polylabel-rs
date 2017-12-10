@@ -101,47 +101,33 @@ where
 }
 
 /// Add a new Quadtree node made up of four `Qcell`s to the binary heap
-fn add_quad<T>(mpq: &mut BinaryHeap<Qcell<T>>, cell: &Qcell<T>, nh: &T, polygon: &Polygon<T>)
-where
+fn add_quad<T>(
+    mpq: &mut BinaryHeap<Qcell<T>>,
+    cell: &Qcell<T>,
+    new_height: &T,
+    polygon: &Polygon<T>,
+) where
     T: Float + Signed,
 {
     let two = T::one() + T::one();
-    // 1
-    let mut new_dist = signed_distance(&(cell.centroid.x() - *nh), &(cell.centroid.y() - *nh), polygon);
-    mpq.push(Qcell::new(
-        cell.centroid.x() - *nh,
-        cell.centroid.y() - *nh,
-        *nh,
-        new_dist,
-        new_dist + *nh * two.sqrt(),
-    ));
-    // 2
-    new_dist = signed_distance(&(cell.centroid.x() + *nh), &(cell.centroid.y() - *nh), polygon);
-    mpq.push(Qcell::new(
-        cell.centroid.x() + *nh,
-        cell.centroid.y() - *nh,
-        *nh,
-        new_dist,
-        new_dist + *nh * two.sqrt(),
-    ));
-    // 3
-    new_dist = signed_distance(&(cell.centroid.x() - *nh), &(cell.centroid.y() + *nh), polygon);
-    mpq.push(Qcell::new(
-        cell.centroid.x() - *nh,
-        cell.centroid.y() + *nh,
-        *nh,
-        new_dist,
-        new_dist + *nh * two.sqrt(),
-    ));
-    // 4
-    new_dist = signed_distance(&(cell.centroid.x() + *nh), &(cell.centroid.y() + *nh), polygon);
-    mpq.push(Qcell::new(
-        cell.centroid.x() + *nh,
-        cell.centroid.y() + *nh,
-        *nh,
-        new_dist,
-        new_dist + *nh * two.sqrt(),
-    ));
+    let centroid_x = cell.centroid.x();
+    let centroid_y = cell.centroid.y();
+    for combo in &[
+        (centroid_x - *new_height, centroid_y - *new_height),
+        (centroid_x + *new_height, centroid_y - *new_height),
+        (centroid_x - *new_height, centroid_y + *new_height),
+        (centroid_x + *new_height, centroid_y + *new_height),
+    ]
+    {
+        let mut new_dist = signed_distance(&combo.0, &combo.1, polygon);
+        mpq.push(Qcell::new(
+            combo.0,
+            combo.1,
+            *new_height,
+            new_dist,
+            new_dist + *new_height * two.sqrt(),
+        ));
+    }
 }
 
 
