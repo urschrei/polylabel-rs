@@ -24,5 +24,5 @@ fn large_polygon(b: &mut Bencher) {
     let points = include!("../data/norway_main.rs");
     let points_ls: Vec<_> = points.iter().map(|e| Point::new(e[0], e[1])).collect();
     let poly = Polygon::new(points_ls.into(), vec![]);
-    b.iter(|| { polylabel(&poly, &10.0); });
+    b.iter(|| { polylabel(&poly, &1.0); });
 }
