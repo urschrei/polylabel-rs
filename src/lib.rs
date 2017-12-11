@@ -171,12 +171,6 @@ where
 {
     // special case for degenerate polygons
     if polygon.area() == T::zero() {
-        // best_cell = Qcell {
-        //     centroid = Point::new(polygon.exterior.0[0].x(), polygon.exterior.0[0].y())
-        //     h: T::zero(),
-        //     distance: distance,
-        //     max_distance: max_distance
-        // };
         return Point::new(T::zero(), T::zero());
     }
     let two = T::one() + T::one();
