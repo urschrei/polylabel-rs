@@ -278,6 +278,13 @@ mod tests {
         assert!(poly.contains(&res));
     }
     #[test]
+    fn test_london() {
+        let coords = include!("poly3.rs");
+        let poly = Polygon::new(coords.into(), vec![]);
+        let res = polylabel(&poly, &0.001);
+        assert_eq!(res, Point::new(-0.45556816445920356, 51.54848888202887));
+    }
+    #[test]
     fn polygon_l_test() {
         // an L shape
         let coords = vec![
