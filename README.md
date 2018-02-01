@@ -53,8 +53,8 @@ The function returns a [struct](https://docs.rs/polylabel/1.0.3/polylabel/struct
 
 A Python example is available in [`ffi.py`](ffi.py)
 
-## Performance
-Using a 3.4 GHz Core i7, finding a label position on a ~9k-vertex polygon (representing the Norwegian mainland) using a tolerance of `1.0` takes around 35 ms.
+## Performance vs Accuracy
+Using a 3.4 GHz Core i7, finding a label position on a ~9k-vertex polygon (representing the Norwegian mainland) using a tolerance of `1.0` takes around 35 ms. Depending upon the dimensions of your polygon(s), you may require a higher tolerance (i.e. a smaller number). See [here](https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude/8674#8674) for some guidance on the accuracy provided by each decimal place.
 
 ## Binaries
 Binary libs for:
