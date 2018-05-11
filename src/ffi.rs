@@ -3,7 +3,7 @@ use std::slice;
 extern crate libc;
 use self::libc::{c_double, c_void, size_t};
 
-use super::geo::{LineString, Point, Polygon};
+use super::geo_types::{LineString, Point, Polygon};
 
 use super::polylabel;
 use super::num_traits::{Float, Signed};

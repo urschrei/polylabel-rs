@@ -8,10 +8,12 @@ use std::collections::BinaryHeap;
 extern crate num_traits;
 use self::num_traits::{Float, FromPrimitive, Signed};
 
+extern crate geo_types;
+use self::geo_types::{Point, Polygon};
+
 extern crate geo;
-use self::geo::{Point, Polygon};
 use self::geo::algorithm::boundingbox::BoundingBox;
-use self::geo::algorithm::distance::Distance;
+use self::geo::algorithm::euclidean_distance::EuclideanDistance;
 use self::geo::algorithm::area::Area;
 use self::geo::algorithm::centroid::Centroid;
 use self::geo::algorithm::contains::Contains;
@@ -97,7 +99,7 @@ where
     let point = Point::new(*x, *y);
     let inside = polygon.contains(&point);
     // Use LineString distance, because Polygon distance returns 0.0 for inside
-    let distance = point.distance(&polygon.exterior);
+    let distance = point.euclidean_distance(&polygon.exterior);
     if inside {
         distance
     } else {
