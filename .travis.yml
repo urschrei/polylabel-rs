@@ -2,6 +2,10 @@ dist: trusty
 language: rust
 services: docker
 sudo: required
+addons:
+    apt:
+        packages:
+            - libssl-dev
 env:
   global:
     # This will be part of the release tarball
@@ -56,6 +60,14 @@ script:
   - bash ci/script.sh
 
 after_script: set +e
+
+after_success: |
+  if [[ "$TRAVIS_RUST_VERSION" == stable ]]; then
+    bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
+    # Uncomment the following line for coveralls.io
+    cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
+
+  fi
 
 before_deploy:
   # OSX deploy doesn't need a Dockerised manylinux1 build
