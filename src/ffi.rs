@@ -5,8 +5,8 @@ use self::libc::{c_double, c_void, size_t};
 
 use super::geo::{LineString, Point, Polygon};
 
-use super::polylabel;
 use super::num_traits::{Float, Signed};
+use super::polylabel;
 
 /// Wrapper for a void pointer to a sequence of [`Array`](struct.Array.html)s, and the sequence length. Used for FFI.
 ///
@@ -68,23 +68,19 @@ pub extern "C" fn polylabel_ffi(
     inners: WrapperArray,
     tolerance: c_double,
 ) -> Position {
-    let exterior: Vec<[f64; 2]> = unsafe {
-        slice::from_raw_parts(outer.data as *mut [c_double; 2], outer.len).to_vec()
-    };
+    let exterior: Vec<[f64; 2]> =
+        unsafe { slice::from_raw_parts(outer.data as *mut [c_double; 2], outer.len).to_vec() };
     let interior: Vec<Vec<[f64; 2]>> = reconstitute2(inners);
     let ls_ext: LineString<_> = exterior.into();
-    let ls_int: Vec<LineString<c_double>> = interior
-        .into_iter()
-        .map(|vec| vec.into())
-        .collect();
+    let ls_int: Vec<LineString<c_double>> = interior.into_iter().map(|vec| vec.into()).collect();
     let poly = Polygon::new(ls_ext, ls_int);
     polylabel(&poly, &tolerance).into()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{polylabel_ffi, Array, WrapperArray, reconstitute2};
     use super::libc::{c_void, size_t};
+    use super::{polylabel_ffi, reconstitute2, Array, WrapperArray};
     use geo::Point;
     use std::mem;
 

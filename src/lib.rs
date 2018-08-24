@@ -1,14 +1,15 @@
-#![doc(html_logo_url = "https://cdn.rawgit.com/urschrei/polylabel-rs/7a07336e85572eb5faaf0657c2383d7de5620cd8/ell.svg",
-       html_root_url = "https://urschrei.github.io/polylabel-rs/")]
+#![doc(
+    html_logo_url = "https://cdn.rawgit.com/urschrei/polylabel-rs/7a07336e85572eb5faaf0657c2383d7de5620cd8/ell.svg",
+    html_root_url = "https://urschrei.github.io/polylabel-rs/"
+)]
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 //! for finding the optimum position of a polygon label.
-use std::iter::Sum;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
+use std::iter::Sum;
 
 extern crate num_traits;
 use self::num_traits::{Float, FromPrimitive, Signed};
-
 
 extern crate geo;
 use self::geo::prelude::*;
@@ -69,11 +70,7 @@ where
         Some(self.cmp(other))
     }
 }
-impl<T> Eq for Qcell<T>
-where
-    T: Float + Signed,
-{
-}
+impl<T> Eq for Qcell<T> where T: Float + Signed {}
 impl<T> PartialEq for Qcell<T>
 where
     T: Float + Signed,
@@ -254,10 +251,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::collections::BinaryHeap;
     use super::{polylabel, Qcell};
-    use geo::{Point, Polygon};
     use geo::prelude::*;
+    use geo::{Point, Polygon};
+    use std::collections::BinaryHeap;
     #[test]
     // polygons are those used in Shapely's tests
     fn test_polylabel() {
