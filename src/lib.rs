@@ -48,8 +48,8 @@ where
         Qcell {
             centroid: Point::new(x, y),
             extent: h,
-            distance: distance,
-            max_distance: max_distance,
+            distance,
+            max_distance,
         }
     }
 }

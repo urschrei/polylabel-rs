@@ -12,6 +12,7 @@ use super::polylabel;
 ///
 /// Each sequence entry represents an inner Polygon ring.
 #[repr(C)]
+#[derive(Copy, Clone)]
 pub struct WrapperArray {
     pub data: *const Array,
     pub len: size_t,
