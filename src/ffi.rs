@@ -3,7 +3,7 @@ use std::slice;
 extern crate libc;
 use self::libc::{c_double, c_void, size_t};
 
-use super::geo_types::{LineString, Point, Polygon};
+use super::geo::{LineString, Point, Polygon};
 
 use super::polylabel;
 use super::num_traits::{Float, Signed};
@@ -72,10 +72,10 @@ pub extern "C" fn polylabel_ffi(
         slice::from_raw_parts(outer.data as *mut [c_double; 2], outer.len).to_vec()
     };
     let interior: Vec<Vec<[f64; 2]>> = reconstitute2(inners);
-    let ls_ext = LineString(exterior.iter().map(|e| Point::new(e[0], e[1])).collect());
+    let ls_ext: LineString<_> = exterior.into();
     let ls_int: Vec<LineString<c_double>> = interior
-        .iter()
-        .map(|vec| LineString(vec.iter().map(|e| Point::new(e[0], e[1])).collect()))
+        .into_iter()
+        .map(|vec| vec.into())
         .collect();
     let poly = Polygon::new(ls_ext, ls_int);
     polylabel(&poly, &tolerance).into()

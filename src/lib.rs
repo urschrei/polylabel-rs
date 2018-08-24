@@ -2,21 +2,17 @@
        html_root_url = "https://urschrei.github.io/polylabel-rs/")]
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 //! for finding the optimum position of a polygon label.
+use std::iter::Sum;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 
 extern crate num_traits;
 use self::num_traits::{Float, FromPrimitive, Signed};
 
-extern crate geo_types;
-use self::geo_types::{Point, Polygon};
 
 extern crate geo;
-use self::geo::algorithm::boundingbox::BoundingBox;
-use self::geo::algorithm::euclidean_distance::EuclideanDistance;
-use self::geo::algorithm::area::Area;
-use self::geo::algorithm::centroid::Centroid;
-use self::geo::algorithm::contains::Contains;
+use self::geo::prelude::*;
+use self::geo::{Point, Polygon};
 
 mod ffi;
 pub use ffi::{polylabel_ffi, Array, Position, WrapperArray};
@@ -169,7 +165,7 @@ fn add_quad<T>(
 ///
 pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
 where
-    T: Float + FromPrimitive + Signed,
+    T: Float + FromPrimitive + Signed + Sum,
 {
     // special case for degenerate polygons
     if polygon.area() == T::zero() {
@@ -178,13 +174,13 @@ where
     let two = T::one() + T::one();
     // Initial best cell values
     let centroid = polygon.centroid().unwrap();
-    let bbox = polygon.bbox().unwrap();
-    let width = bbox.xmax - bbox.xmin;
-    let height = bbox.ymax - bbox.ymin;
+    let bbox = polygon.bounding_rect().unwrap();
+    let width = bbox.max.x - bbox.min.x;
+    let height = bbox.max.y - bbox.min.y;
     let cell_size = width.min(height);
     // Special case for degenerate polygons
     if cell_size == T::zero() {
-        return Point::new(bbox.xmin, bbox.ymin);
+        return Point::new(bbox.min.x, bbox.min.y);
     }
     let mut h = cell_size / two;
     let distance = signed_distance(&centroid.x(), &centroid.y(), polygon);
@@ -200,12 +196,12 @@ where
 
     // special case for rectangular polygons
     let bbox_cell_dist = signed_distance(
-        &(bbox.xmin + width / two),
-        &(bbox.ymin + height / two),
+        &(bbox.min.x + width / two),
+        &(bbox.min.y + height / two),
         polygon,
     );
     let bbox_cell = Qcell {
-        centroid: Point::new(bbox.xmin + width / two, bbox.ymin + height / two),
+        centroid: Point::new(bbox.min.x + width / two, bbox.min.y + height / two),
         extent: T::zero(),
         distance: bbox_cell_dist,
         max_distance: bbox_cell_dist + T::zero() * two.sqrt(),
@@ -218,11 +214,11 @@ where
     // Priority queue
     let mut cell_queue: BinaryHeap<Qcell<T>> = BinaryHeap::new();
     // Build an initial quadtree node, which covers the Polygon
-    let mut x = bbox.xmin;
+    let mut x = bbox.min.x;
     let mut y;
-    while x < bbox.xmax {
-        y = bbox.ymin;
-        while y < bbox.ymax {
+    while x < bbox.max.x {
+        y = bbox.min.y;
+        while y < bbox.max.y {
             let latest_dist = signed_distance(&(x + h), &(y + h), polygon);
             cell_queue.push(Qcell {
                 centroid: Point::new(x + h, y + h),
@@ -261,7 +257,7 @@ mod tests {
     use std::collections::BinaryHeap;
     use super::{polylabel, Qcell};
     use geo::{Point, Polygon};
-    use geo::contains::Contains;
+    use geo::prelude::*;
     #[test]
     // polygons are those used in Shapely's tests
     fn test_polylabel() {
