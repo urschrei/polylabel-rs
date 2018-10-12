@@ -78,7 +78,7 @@ after_script: set +e
 
 after_success: |
   if [[ "$TRAVIS_RUST_VERSION" == stable ]] && [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then
-    bash <(curl https://raw.githubusercontent.com/xd009642/tarpaulin/master/travis-install.sh)
+    cargo install tarpaulin
     # Uncomment the following line for coveralls.io
     cargo tarpaulin --ciserver travis-ci --coveralls $TRAVIS_JOB_ID
 
