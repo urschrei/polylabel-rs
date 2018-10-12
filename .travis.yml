@@ -44,7 +44,7 @@ matrix:
       rust: beta
       env: TARGET=x86_64-unknown-linux-gnu
 
-      - os: windows
+    - os: windows
       rust: beta
       env: TARGET=x86_64-pc-windows-msvc
       services: docker
