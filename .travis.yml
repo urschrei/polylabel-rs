@@ -29,6 +29,11 @@ matrix:
       env: TARGET=x86_64-unknown-linux-gnu
       services: docker
 
+    - os: windows
+      rust: stable
+      env: TARGET=x86_64-pc-windows-msvc
+      services: docker
+
     # BETA
     - os: osx
       rust: beta
@@ -39,6 +44,11 @@ matrix:
       rust: beta
       env: TARGET=x86_64-unknown-linux-gnu
 
+      - os: windows
+      rust: beta
+      env: TARGET=x86_64-pc-windows-msvc
+      services: docker
+
     # NIGHTLY
     - os: osx
       osx_image: xcode8.3
@@ -48,6 +58,11 @@ matrix:
     - os: linux
       rust: nightly
       env: TARGET=x86_64-unknown-linux-gnu
+
+    - os: windows
+      rust: nightly
+      env: TARGET=x86_64-pc-windows-msvc
+      services: docker
 
 before_install:
   - set -e
@@ -71,7 +86,7 @@ after_success: |
 
 before_deploy:
   # OSX deploy doesn't need a Dockerised manylinux1 build
-  - if ! [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then bash ci/before_deploy_osx.sh; fi
+  - if [[ "$TARGET" == "x86_64-apple-darwin" ]]; then bash ci/before_deploy_osx.sh; fi
   # Linux deploy needs Dockerised manylinux1 artefacts
   - if [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then docker pull $DOCKER_IMAGE; fi
   - if [[ "$TARGET" == "x86_64-unknown-linux-gnu" ]]; then sudo docker run -e TRAVIS_TAG="$TRAVIS_TAG" --rm -v `pwd`:/io $DOCKER_IMAGE /io/ci/before_deploy_manylinux1.sh; fi
