@@ -16,7 +16,7 @@ use self::geo::prelude::*;
 use self::geo::{Point, Polygon};
 
 mod ffi;
-pub use ffi::{polylabel_ffi, Array, Position, WrapperArray};
+pub use crate::ffi::{polylabel_ffi, Array, Position, WrapperArray};
 
 #[doc(hidden)]
 #[allow(dead_code)]
