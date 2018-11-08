@@ -21,7 +21,7 @@ fn bench_threads(b: &mut Bencher) {
         (0.0, 4.0),
         (0.0, 0.0),
     ];
-    let ls = LineString(coords.iter().map(|e| Point::new(e.0, e.1)).collect());
+    let ls: LineString<_> = coords.into();
     let poly = Polygon::new(ls, vec![]);
     b.iter(|| {
         polylabel(&poly, &10.0);
