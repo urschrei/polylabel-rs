@@ -20,49 +20,34 @@ matrix:
   include:
     # STABLE
     - os: osx
-      osx_image: xcode8.3
+      osx_image: xcode10.1
       rust: stable
       env: TARGET=x86_64-apple-darwin
 
     - os: linux
       rust: stable
       env: TARGET=x86_64-unknown-linux-gnu
-      services: docker
-
-    - os: windows
-      rust: stable
-      env: TARGET=x86_64-pc-windows-msvc
       services: docker
 
     # BETA
     - os: osx
       rust: beta
-      osx_image: xcode8.3
+      osx_image: xcode10.1
       env: TARGET=x86_64-apple-darwin
 
     - os: linux
       rust: beta
       env: TARGET=x86_64-unknown-linux-gnu
-
-    - os: windows
-      rust: beta
-      env: TARGET=x86_64-pc-windows-msvc
-      services: docker
 
     # NIGHTLY
     - os: osx
-      osx_image: xcode8.3
+      osx_image: xcode10.1
       rust: nightly
       env: TARGET=x86_64-apple-darwin
 
     - os: linux
       rust: nightly
       env: TARGET=x86_64-unknown-linux-gnu
-
-    - os: windows
-      rust: nightly
-      env: TARGET=x86_64-pc-windows-msvc
-      services: docker
 
 before_install:
   - set -e
