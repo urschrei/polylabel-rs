@@ -118,7 +118,7 @@ fn add_quad<T>(
         (centroid_x - *new_height, centroid_y + *new_height),
         (centroid_x + *new_height, centroid_y + *new_height),
     ] {
-        let mut new_dist = signed_distance(&combo.0, &combo.1, polygon);
+        let new_dist = signed_distance(&combo.0, &combo.1, polygon);
         mpq.push(Qcell::new(
             combo.0,
             combo.1,
