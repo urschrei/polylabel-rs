@@ -4,16 +4,12 @@
 )]
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 //! for finding the optimum position of a polygon label.
+use geo::prelude::*;
+use geo::{Point, Polygon};
+use num_traits::{Float, FromPrimitive, Signed};
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::iter::Sum;
-
-extern crate num_traits;
-use self::num_traits::{Float, FromPrimitive, Signed};
-
-extern crate geo;
-use self::geo::prelude::*;
-use self::geo::{Point, Polygon};
 
 mod ffi;
 pub use crate::ffi::{polylabel_ffi, Array, Position, WrapperArray};

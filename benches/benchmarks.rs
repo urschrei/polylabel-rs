@@ -3,11 +3,8 @@
 extern crate test;
 use test::Bencher;
 
-extern crate polylabel;
+use ::geo::{LineString, Point, Polygon};
 use polylabel::polylabel;
-
-extern crate geo;
-use self::geo::{LineString, Point, Polygon};
 
 #[bench]
 fn bench_threads(b: &mut Bencher) {

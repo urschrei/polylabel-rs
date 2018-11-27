@@ -1,12 +1,8 @@
 use std::slice;
-
-extern crate libc;
-use self::libc::{c_double, c_void, size_t};
-
-use super::geo::{LineString, Point, Polygon};
-
-use super::num_traits::{Float, Signed};
-use super::polylabel;
+use libc::{c_double, c_void, size_t};
+use geo::{LineString, Point, Polygon};
+use num_traits::{Float, Signed};
+use crate::polylabel;
 
 /// Wrapper for a void pointer to a sequence of [`Array`](struct.Array.html)s, and the sequence length. Used for FFI.
 ///
@@ -82,9 +78,9 @@ pub extern "C" fn polylabel_ffi(
 
 #[cfg(test)]
 mod tests {
-    use super::libc::{c_void, size_t};
-    use super::{polylabel_ffi, reconstitute2, Array, WrapperArray};
+    use crate::ffi::{polylabel_ffi, reconstitute2, Array, WrapperArray};
     use geo::Point;
+    use libc::{c_void, size_t};
     use std::mem;
 
     // Only used for testing
