@@ -17,7 +17,7 @@ pub use crate::ffi::{polylabel_ffi, Array, Position, WrapperArray};
 #[doc(hidden)]
 #[allow(dead_code)]
 pub extern "C" fn spare() {
-    println!("");
+    println!();
 }
 
 /// Represention of a Quadtree node's cells. A node contains four Qcells.

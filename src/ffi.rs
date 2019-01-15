@@ -49,7 +49,7 @@ fn reconstitute(arr: &Array) -> Vec<[f64; 2]> {
 
 fn reconstitute2(arr: WrapperArray) -> Vec<Vec<[f64; 2]>> {
     let arrays = unsafe { slice::from_raw_parts(arr.data as *mut Array, arr.len) };
-    arrays.into_iter().map(|x| reconstitute(x)).collect()
+    arrays.iter().map(|x| reconstitute(x)).collect()
 }
 
 /// FFI access to the [`polylabel`](fn.polylabel.html) function
