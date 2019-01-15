@@ -1,6 +1,6 @@
 [package]
 name = "polylabel"
-version = "1.2.1"
+version = "1.2.2"
 authors = ["Stephan Hügel <urschrei@gmail.com>"]
 description = "A Rust implementation of the Polylabel algorithm for finding optimum polygon label positions."
 readme = "README.md"
@@ -8,11 +8,15 @@ keywords = ["geo", "polylabel", "gis"]
 repository = "https://github.com/urschrei/polylabel-rs"
 license = "MIT"
 edition = "2018"
+build = "src/build.rs"
 
 [dependencies]
 libc = "0.2.29"
-geo = "0.10.0"
+geo = "0.11.0"
 num-traits = "0.2.5"
+
+[build-dependencies]
+cbindgen = "0.6.8"
 
 [lib]
 name = "polylabel"

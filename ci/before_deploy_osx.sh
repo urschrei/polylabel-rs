@@ -30,6 +30,7 @@ main() {
         # TODO Update this to package the right artifacts
         cp target/$TARGET/release/*.dylib $stage
         cp -r target/$TARGET/release/*.dSYM $stage 2>/dev/null || :
+        cp include/header.h $stage
         cd $stage
         tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *
         cd $src
