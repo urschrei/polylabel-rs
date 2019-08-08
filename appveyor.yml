@@ -62,7 +62,7 @@ artifacts:
 
 before_deploy:
   # NEW Generate artifacts for release
-  - cargo rustc --target %TARGET% --release -- -Z unstable-options -C target-feature=+crt-static
+  - cargo rustc --target %TARGET% --release -- -C target-feature=+crt-static
   # Cython build expects name.lib, not name.dll.lib
   - cp target\%TARGET%\release\deps\polylabel.dll.lib target\%TARGET%\release\deps\polylabel.lib
 
