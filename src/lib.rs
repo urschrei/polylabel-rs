@@ -88,7 +88,7 @@ where
     let point = Point::new(*x, *y);
     let inside = polygon.contains(&point);
     // Use LineString distance, because Polygon distance returns 0.0 for inside
-    let distance = polygon.exterior().euclidean_distance(&point);
+    let distance = point.euclidean_distance(polygon.exterior());
     if inside {
         distance
     } else {
