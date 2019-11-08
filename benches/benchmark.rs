@@ -20,7 +20,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         ];
         let poly = Polygon::new(coords.into(), vec![]);
         bencher.iter(|| {
-            polylabel(&poly, &10.0);
+            polylabel(&poly, &10.0).unwrap();
         });
     });
 
@@ -28,7 +28,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         let points = include!("../data/norway_main.rs");
         let poly = Polygon::new(points.into(), vec![]);
         bencher.iter(|| {
-            polylabel(&poly, &1.0);
+            polylabel(&poly, &1.0).unwrap();
         });
     });
 }

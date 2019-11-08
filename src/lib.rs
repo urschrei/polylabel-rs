@@ -1,6 +1,6 @@
 #![doc(
     html_logo_url = "https://cdn.rawgit.com/urschrei/polylabel-rs/7a07336e85572eb5faaf0657c2383d7de5620cd8/ell.svg",
-    html_root_url = "https://urschrei.github.io/polylabel-rs/"
+    html_root_url = "https://docs.rs/polylabel-rs/"
 )]
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 //! for finding the optimum position of a polygon label.
@@ -10,6 +10,9 @@ use num_traits::{Float, FromPrimitive, Signed};
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::iter::Sum;
+
+pub mod errors;
+use errors::PolylabelError;
 
 mod ffi;
 pub use crate::ffi::{polylabel_ffi, Array, Position, WrapperArray};
@@ -145,29 +148,33 @@ fn add_quad<T>(
 /// // Its centroid lies outside the polygon
 /// assert_eq!(poly.centroid(), Point::new(1.3571428571428572, 1.3571428571428572));
 ///
-/// let label_position = polylabel(&poly, &1.0);
+/// let label_position = polylabel(&poly, &1.0).unwrap();
 /// // Optimum label position is inside the polygon
 /// assert_eq!(label_position, Point::new(0.5625, 0.5625));
 /// ```
 ///
-pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Point<T>
+pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Result<Point<T>, PolylabelError>
 where
     T: Float + FromPrimitive + Signed + Sum,
 {
     // special case for degenerate polygons
     if polygon.area() == T::zero() {
-        return Point::new(T::zero(), T::zero());
+        return Ok(Point::new(T::zero(), T::zero()));
     }
     let two = T::one() + T::one();
     // Initial best cell values
-    let centroid = polygon.centroid().unwrap();
-    let bbox = polygon.bounding_rect().unwrap();
+    let centroid = polygon
+        .centroid()
+        .ok_or_else(|| PolylabelError::CentroidCalculation)?;
+    let bbox = polygon
+        .bounding_rect()
+        .ok_or_else(|| PolylabelError::RectCalculation)?;
     let width = bbox.max.x - bbox.min.x;
     let height = bbox.max.y - bbox.min.y;
     let cell_size = width.min(height);
     // Special case for degenerate polygons
     if cell_size == T::zero() {
-        return Point::new(bbox.min.x, bbox.min.y);
+        return Ok(Point::new(bbox.min.x, bbox.min.y));
     }
     let mut h = cell_size / two;
     let distance = signed_distance(&centroid.x(), &centroid.y(), polygon);
@@ -219,7 +226,7 @@ where
     }
     // Now try to find better solutions
     while !cell_queue.is_empty() {
-        let cell = cell_queue.pop().unwrap();
+        let cell = cell_queue.pop().ok_or_else(|| PolylabelError::EmptyQueue)?;
         // Update the best cell if we find a cell with greater distance
         if cell.distance > best_cell.distance {
             best_cell.centroid = Point::new(cell.centroid.x(), cell.centroid.y());
@@ -236,7 +243,7 @@ where
         add_quad(&mut cell_queue, &cell, &h, polygon);
     }
     // We've exhausted the queue, so return the best solution we've found
-    Point::new(best_cell.centroid.x(), best_cell.centroid.y())
+    Ok(Point::new(best_cell.centroid.x(), best_cell.centroid.y()))
 }
 
 #[cfg(test)]
@@ -250,7 +257,7 @@ mod tests {
     fn test_polylabel() {
         let coords = include!("poly1.rs");
         let poly = Polygon::new(coords.into(), vec![]);
-        let res = polylabel(&poly, &10.000);
+        let res = polylabel(&poly, &10.000).unwrap();
         assert_eq!(res, Point::new(59.35615556364569, 121.83919629746435));
     }
     #[test]
@@ -259,14 +266,14 @@ mod tests {
     fn test_concave() {
         let coords = include!("poly2.rs");
         let poly = Polygon::new(coords.into(), vec![]);
-        let res = polylabel(&poly, &1.0);
+        let res = polylabel(&poly, &1.0).unwrap();
         assert!(poly.contains(&res));
     }
     #[test]
     fn test_london() {
         let coords = include!("poly3.rs");
         let poly = Polygon::new(coords.into(), vec![]);
-        let res = polylabel(&poly, &0.001);
+        let res = polylabel(&poly, &0.001).unwrap();
         assert_eq!(res, Point::new(-0.45556816445920356, 51.54848888202887));
     }
     #[test]
@@ -282,21 +289,21 @@ mod tests {
             (0.0, 0.0),
         ];
         let poly = Polygon::new(coords.into(), vec![]);
-        let res = polylabel(&poly, &0.10);
+        let res = polylabel(&poly, &0.10).unwrap();
         assert_eq!(res, Point::new(0.5625, 0.5625));
     }
     #[test]
     fn degenerate_polygon_test() {
         let a_coords = vec![(0.0, 0.0), (1.0, 0.0), (2.0, 0.0), (0.0, 0.0)];
         let a_poly = Polygon::new(a_coords.into(), vec![]);
-        let a_res = polylabel(&a_poly, &1.0);
+        let a_res = polylabel(&a_poly, &1.0).unwrap();
         assert_eq!(a_res, Point::new(0.0, 0.0));
     }
     #[test]
     fn degenerate_polygon_test_2() {
         let b_coords = vec![(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (1.0, 0.0), (0.0, 0.0)];
         let b_poly = Polygon::new(b_coords.into(), vec![]);
-        let b_res = polylabel(&b_poly, &1.0);
+        let b_res = polylabel(&b_poly, &1.0).unwrap();
         assert_eq!(b_res, Point::new(0.0, 0.0));
     }
     #[test]

@@ -1,8 +1,9 @@
-use std::slice;
-use libc::{c_double, c_void, size_t};
-use geo::{LineString, Point, Polygon};
-use num_traits::{Float, Signed};
 use crate::polylabel;
+use geo::{LineString, Point, Polygon};
+use libc::{c_double, c_void, size_t};
+use num_traits::{Float, Signed};
+use std::f64;
+use std::slice;
 
 /// Wrapper for a void pointer to a sequence of [`Array`](struct.Array.html)s, and the sequence length. Used for FFI.
 ///
@@ -59,6 +60,8 @@ fn reconstitute2(arr: WrapperArray) -> Vec<Vec<[f64; 2]>> {
 /// - an exterior ring [`Array`](struct.Array.html)
 /// - zero or more interior rings [`WrapperArray`](struct.WrapperArray.html)
 /// - a tolerance `c_double`.
+/// If an error occurs while attempting to calculate the label position, the resulting point coordinates
+/// will be NaN, NaN.
 #[no_mangle]
 pub extern "C" fn polylabel_ffi(
     outer: Array,
@@ -73,7 +76,9 @@ pub extern "C" fn polylabel_ffi(
     let interior: Vec<Vec<[f64; 2]>> = reconstitute2(inners);
     let ls_int: Vec<LineString<c_double>> = interior.into_iter().map(|vec| vec.into()).collect();
     let poly = Polygon::new(exterior, ls_int);
-    polylabel(&poly, &tolerance).into()
+    polylabel(&poly, &tolerance)
+        .unwrap_or_else(|_| Point::new(f64::NAN, f64::NAN))
+        .into()
 }
 
 #[cfg(test)]
@@ -135,5 +140,4 @@ mod tests {
         let res_point = Point::new(res.x_pos, res.y_pos);
         assert_eq!(res_point, Point::new(3.125, 2.875));
     }
-
 }
