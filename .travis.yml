@@ -20,7 +20,7 @@ matrix:
   include:
     # STABLE
     - os: osx
-      osx_image: xcode10.1
+      osx_image: xcode11.2
       rust: stable
       env: TARGET=x86_64-apple-darwin
 
@@ -32,7 +32,7 @@ matrix:
     # BETA
     - os: osx
       rust: beta
-      osx_image: xcode10.1
+      osx_image: xcode11.2
       env: TARGET=x86_64-apple-darwin
 
     - os: linux
@@ -41,7 +41,7 @@ matrix:
 
     # NIGHTLY
     - os: osx
-      osx_image: xcode10.1
+      osx_image: xcode11.2
       rust: nightly
       env: TARGET=x86_64-apple-darwin
 
