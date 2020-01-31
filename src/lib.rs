@@ -14,7 +14,9 @@ use std::iter::Sum;
 pub mod errors;
 use errors::PolylabelError;
 
+#[cfg(not(target_arch = "wasm32"))]
 mod ffi;
+#[cfg(not(target_arch = "wasm32"))]
 pub use crate::ffi::{polylabel_ffi, Array, Position, WrapperArray};
 
 /// Represention of a Quadtree node's cells. A node contains four Qcells.
