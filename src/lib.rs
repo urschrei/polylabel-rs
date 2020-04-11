@@ -171,12 +171,12 @@ where
     let bbox = polygon
         .bounding_rect()
         .ok_or_else(|| PolylabelError::RectCalculation)?;
-    let width = bbox.max.x - bbox.min.x;
-    let height = bbox.max.y - bbox.min.y;
+    let width = bbox.max().x - bbox.min().x;
+    let height = bbox.max().y - bbox.min().y;
     let cell_size = width.min(height);
     // Special case for degenerate polygons
     if cell_size == T::zero() {
-        return Ok(Point::new(bbox.min.x, bbox.min.y));
+        return Ok(Point::new(bbox.min().x, bbox.min().y));
     }
     let mut h = cell_size / two;
     let distance = signed_distance(&centroid.x(), &centroid.y(), polygon);
@@ -192,12 +192,12 @@ where
 
     // special case for rectangular polygons
     let bbox_cell_dist = signed_distance(
-        &(bbox.min.x + width / two),
-        &(bbox.min.y + height / two),
+        &(bbox.min().x + width / two),
+        &(bbox.min().y + height / two),
         polygon,
     );
     let bbox_cell = Qcell {
-        centroid: Point::new(bbox.min.x + width / two, bbox.min.y + height / two),
+        centroid: Point::new(bbox.min().x + width / two, bbox.min().y + height / two),
         extent: T::zero(),
         distance: bbox_cell_dist,
         max_distance: bbox_cell_dist + T::zero() * two.sqrt(),
@@ -210,11 +210,11 @@ where
     // Priority queue
     let mut cell_queue: BinaryHeap<Qcell<T>> = BinaryHeap::new();
     // Build an initial quadtree node, which covers the Polygon
-    let mut x = bbox.min.x;
+    let mut x = bbox.min().x;
     let mut y;
-    while x < bbox.max.x {
-        y = bbox.min.y;
-        while y < bbox.max.y {
+    while x < bbox.max().x {
+        y = bbox.min().y;
+        while y < bbox.max().y {
             let latest_dist = signed_distance(&(x + h), &(y + h), polygon);
             cell_queue.push(Qcell {
                 centroid: Point::new(x + h, y + h),
