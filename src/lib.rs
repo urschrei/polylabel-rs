@@ -160,7 +160,7 @@ where
     T: Float + FromPrimitive + Signed + Sum,
 {
     // special case for degenerate polygons
-    if polygon.area() == T::zero() {
+    if polygon.signed_area() == T::zero() {
         return Ok(Point::new(T::zero(), T::zero()));
     }
     let two = T::one() + T::one();
