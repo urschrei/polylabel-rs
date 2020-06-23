@@ -9,7 +9,7 @@ main() {
         target=x86_64-apple-darwin
         sort=gsort  # for `sort --sort-version`, from brew's coreutils.
     fi
-    cargo install cross
+    cargo install cross --force
 }
 
 main
