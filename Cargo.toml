@@ -1,6 +1,6 @@
 [package]
 name = "polylabel"
-version = "2.3.0"
+version = "2.3.1"
 authors = ["Stephan Hügel <urschrei@gmail.com>"]
 description = "A Rust implementation of the Polylabel algorithm for finding optimum polygon label positions."
 readme = "README.md"
@@ -26,7 +26,7 @@ criterion = "0.3.0"
 name = "polylabel"
 crate-type = ["rlib", "cdylib"]
 test = true
-doctest = false
+doctest = true
 doc = true
 
 [profile.release]

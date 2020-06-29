@@ -133,7 +133,8 @@ fn add_quad<T>(
 /// ```
 /// use polylabel::polylabel;
 /// extern crate geo;
-/// use self::geo::{Point, LineString, Polygon};
+/// use geo::{Point, LineString, Polygon};
+/// use geo::prelude::*;
 ///
 /// // An approximate `L` shape
 /// let coords = vec![
@@ -148,9 +149,9 @@ fn add_quad<T>(
 /// let poly = Polygon::new(coords.into(), vec![]);
 ///
 /// // Its centroid lies outside the polygon
-/// assert_eq!(poly.centroid(), Point::new(1.3571428571428572, 1.3571428571428572));
+/// assert_eq!(poly.centroid().unwrap(), Point::new(1.3571428571428572, 1.3571428571428572));
 ///
-/// let label_position = polylabel(&poly, &1.0).unwrap();
+/// let label_position = polylabel(&poly, &0.1).unwrap();
 /// // Optimum label position is inside the polygon
 /// assert_eq!(label_position, Point::new(0.5625, 0.5625));
 /// ```
