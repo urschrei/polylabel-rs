@@ -1,7 +1,6 @@
 use crate::polylabel;
-use geo::{LineString, Point, Polygon};
+use geo::{GeoFloat, LineString, Point, Polygon};
 use libc::{c_double, c_void, size_t};
-use num_traits::{Float, Signed};
 use std::f64;
 use std::slice;
 
@@ -34,7 +33,7 @@ pub struct Position {
 // convert a Polylabel result Point into values that can be sent across the FFI boundary
 impl<T> From<Point<T>> for Position
 where
-    T: Float + Signed,
+    T: GeoFloat,
 {
     fn from(point: Point<T>) -> Position {
         Position {

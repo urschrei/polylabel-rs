@@ -5,8 +5,8 @@
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 //! for finding the optimum position of a polygon label.
 use geo::prelude::*;
-use geo::{Point, Polygon};
-use num_traits::{Float, FromPrimitive, Signed};
+use geo::{GeoFloat, Point, Polygon};
+use num_traits::FromPrimitive;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::iter::Sum;
@@ -23,7 +23,7 @@ pub use crate::ffi::{polylabel_ffi, Array, Position, WrapperArray};
 #[derive(Debug)]
 struct Qcell<T>
 where
-    T: Float + Signed,
+    T: GeoFloat
 {
     // The cell's centroid
     centroid: Point<T>,
@@ -37,7 +37,7 @@ where
 
 impl<T> Qcell<T>
 where
-    T: Float + Signed,
+    T: GeoFloat,
 {
     fn new(x: T, y: T, h: T, distance: T, max_distance: T) -> Qcell<T> {
         Qcell {
@@ -51,7 +51,7 @@ where
 
 impl<T> Ord for Qcell<T>
 where
-    T: Float + Signed,
+    T: GeoFloat,
 {
     fn cmp(&self, other: &Qcell<T>) -> std::cmp::Ordering {
         self.max_distance.partial_cmp(&other.max_distance).unwrap()
@@ -59,20 +59,20 @@ where
 }
 impl<T> PartialOrd for Qcell<T>
 where
-    T: Float + Signed,
+    T: GeoFloat,
 {
     fn partial_cmp(&self, other: &Qcell<T>) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
-impl<T> Eq for Qcell<T> where T: Float + Signed {}
+impl<T> Eq for Qcell<T> where T: GeoFloat {}
 impl<T> PartialEq for Qcell<T>
 where
-    T: Float + Signed,
+    T: GeoFloat,
 {
     fn eq(&self, other: &Qcell<T>) -> bool
     where
-        T: Float,
+        T: GeoFloat,
     {
         self.max_distance == other.max_distance
     }
@@ -82,7 +82,7 @@ where
 /// Returned value is negative if the point is outside the polygon's exterior ring
 fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
 where
-    T: Float,
+    T: GeoFloat,
 {
     let point = Point::new(*x, *y);
     let inside = polygon.contains(&point);
@@ -102,7 +102,7 @@ fn add_quad<T>(
     new_height: &T,
     polygon: &Polygon<T>,
 ) where
-    T: Float + Signed,
+    T: GeoFloat,
 {
     let two = T::one() + T::one();
     let centroid_x = cell.centroid.x();
@@ -158,7 +158,7 @@ fn add_quad<T>(
 ///
 pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Result<Point<T>, PolylabelError>
 where
-    T: Float + FromPrimitive + Signed + Sum,
+    T: GeoFloat + FromPrimitive + Sum,
 {
     // special case for degenerate polygons
     if polygon.signed_area() == T::zero() {
