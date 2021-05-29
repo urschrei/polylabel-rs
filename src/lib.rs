@@ -260,7 +260,7 @@ mod tests {
     #[test]
     // polygons are those used in Shapely's tests
     fn test_polylabel() {
-        let coords = include!("poly1.rs");
+        let coords = include!("../tests/fixtures/poly1.rs");
         let poly = Polygon::new(coords.into(), vec![]);
         let res = polylabel(&poly, &10.000).unwrap();
         assert_eq!(res, Point::new(59.35615556364569, 121.83919629746435));
@@ -269,14 +269,14 @@ mod tests {
     // does a concave polygon contain the calculated point?
     // relevant because the centroid lies outside the polygon in this case
     fn test_concave() {
-        let coords = include!("poly2.rs");
+        let coords = include!("../tests/fixtures/poly2.rs");
         let poly = Polygon::new(coords.into(), vec![]);
         let res = polylabel(&poly, &1.0).unwrap();
         assert!(poly.contains(&res));
     }
     #[test]
     fn test_london() {
-        let coords = include!("poly3.rs");
+        let coords = include!("../tests/fixtures/poly3.rs");
         let poly = Polygon::new(coords.into(), vec![]);
         let res = polylabel(&poly, &0.001).unwrap();
         assert_eq!(res, Point::new(-0.45556816445920356, 51.54848888202887));
