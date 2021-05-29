@@ -23,7 +23,7 @@ pub use crate::ffi::{polylabel_ffi, Array, Position, WrapperArray};
 #[derive(Debug)]
 struct Qcell<T>
 where
-    T: GeoFloat
+    T: GeoFloat,
 {
     // The cell's centroid
     centroid: Point<T>,
@@ -107,12 +107,14 @@ fn add_quad<T>(
     let two = T::one() + T::one();
     let centroid_x = cell.centroid.x();
     let centroid_y = cell.centroid.y();
-    for combo in &[
+    [
         (centroid_x - *new_height, centroid_y - *new_height),
         (centroid_x + *new_height, centroid_y - *new_height),
         (centroid_x - *new_height, centroid_y + *new_height),
         (centroid_x + *new_height, centroid_y + *new_height),
-    ] {
+    ]
+    .iter()
+    .for_each(|combo| {
         let new_dist = signed_distance(&combo.0, &combo.1, polygon);
         mpq.push(Qcell::new(
             combo.0,
@@ -121,7 +123,7 @@ fn add_quad<T>(
             new_dist,
             new_dist + *new_height * two.sqrt(),
         ));
-    }
+    });
 }
 
 /// Calculate a Polygon's ideal label position by calculating its ✨pole of inaccessibility✨
