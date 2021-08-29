@@ -170,10 +170,10 @@ where
     // Initial best cell values
     let centroid = polygon
         .centroid()
-        .ok_or_else(|| PolylabelError::CentroidCalculation)?;
+        .ok_or(PolylabelError::CentroidCalculation)?;
     let bbox = polygon
         .bounding_rect()
-        .ok_or_else(|| PolylabelError::RectCalculation)?;
+        .ok_or(PolylabelError::RectCalculation)?;
     let width = bbox.max().x - bbox.min().x;
     let height = bbox.max().y - bbox.min().y;
     let cell_size = width.min(height);
@@ -231,7 +231,7 @@ where
     }
     // Now try to find better solutions
     while !cell_queue.is_empty() {
-        let cell = cell_queue.pop().ok_or_else(|| PolylabelError::EmptyQueue)?;
+        let cell = cell_queue.pop().ok_or(PolylabelError::EmptyQueue)?;
         // Update the best cell if we find a cell with greater distance
         if cell.distance > best_cell.distance {
             best_cell.centroid = Point::new(cell.centroid.x(), cell.centroid.y());
