@@ -49,7 +49,7 @@ fn reconstitute(arr: &Array) -> Vec<[f64; 2]> {
 
 fn reconstitute2(arr: WrapperArray) -> Vec<Vec<[f64; 2]>> {
     let arrays = unsafe { slice::from_raw_parts(arr.data as *mut Array, arr.len) };
-    arrays.iter().map(|x| reconstitute(x)).collect()
+    arrays.iter().map(reconstitute).collect()
 }
 
 /// FFI access to the [`polylabel`](fn.polylabel.html) function
@@ -98,7 +98,7 @@ mod tests {
     }
     // only used for testing
     fn gen_wrapperarray(v: Vec<Vec<[f64; 2]>>) -> WrapperArray {
-        let converted: Vec<Array> = v.into_iter().map(|x| gen_array(x)).collect();
+        let converted: Vec<Array> = v.into_iter().map(gen_array).collect();
         let array2 = WrapperArray {
             data: converted.as_ptr() as *const Array,
             len: converted.len() as size_t,
