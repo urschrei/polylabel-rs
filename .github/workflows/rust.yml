@@ -1,7 +1,155 @@
-on: push
+on: [push, pull_request]
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  cratename: polylabel
+  MACOSX_DEPLOYMENT_TARGET: 10.9
+
+name: Test and Build
+
 jobs:
-  build_and_test:
-    runs-on: ubuntu-latest
+  test:
+    if: github.event_name == 'push' && !contains(github.ref, 'refs/tags/')
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - build: linux
+          os: ubuntu-latest
+          rust: stable
+          target: x86_64-unknown-linux-gnu
+          use-cross: false
+        - build: macos
+          os: macos-11
+          rust: stable
+          target: x86_64-apple-darwin
+          use-cross: false
+        - build: windows
+          os: windows-latest
+          rust: stable
+          target: x86_64-pc-windows-msvc
+          use-cross: false
     steps:
       - uses: actions/checkout@v2
-      - run: cargo test
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+      - uses: actions-rs/cargo@v1
+        with:
+          use-cross: ${{ matrix.use-cross }}
+          command: test
+          args: --target=${{ matrix.target }}
+
+  build:
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    name: Build and release on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - build: linux
+          os: ubuntu-latest
+          rust: stable
+          target: x86_64-unknown-linux-gnu
+          use-cross: true
+        - build: macos
+          os: macos-latest
+          rust: stable
+          target: x86_64-apple-darwin
+          use-cross: false
+        - build: windows
+          os: windows-latest
+          rust: stable
+          target: x86_64-pc-windows-msvc
+          use-cross: false
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: ${{ matrix.target }}
+      - uses: actions-rs/cargo@v1
+        with:
+          use-cross: ${{ matrix.use-cross }}
+          command: build
+          args: --release --target=${{ matrix.target }}
+      - name: Gather Assets
+        run: |
+          src=$(pwd)
+          stage=
+          case $RUNNER_OS in
+              Linux)
+                  stage=$(mktemp -d)
+                  ;;
+              macOS)
+                  stage=$(mktemp -d -t tmp)
+                  ;;
+              Windows)
+                  stage=$(mktemp -d)
+                  ;;
+          esac
+          mkdir zipped
+          cp include/header.h $stage
+          RELEASE_VERSION=${GITHUB_REF#refs/tags/}
+          ASSET_NAME="${{ env.cratename }}-$RELEASE_VERSION-${{ matrix.target }}"
+          echo "Release name is $ASSET_NAME"
+          echo "STAGE=$stage" >> $GITHUB_ENV
+          echo "ASSET_NAME=$ASSET_NAME" >> $GITHUB_ENV
+          if [ "$RUNNER_OS" == "Linux" ]; then
+            echo "TYPE=tar" >> $GITHUB_ENV
+            echo "EXTENSION=tar.gz" >> $GITHUB_ENV
+            for lib in target/${{ matrix.target }}/release/*.so; do
+                strip -s $lib
+            done
+            cp target/${{ matrix.target }}/release/*.so $stage/
+          fi
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            echo "TYPE=tar" >> $GITHUB_ENV
+            echo "EXTENSION=tar.gz" >> $GITHUB_ENV
+            for lib in target/${{ matrix.target }}/release/*.dylib; do
+                strip -ur $lib
+            done
+            cp target/${{ matrix.target }}/release/*.dylib $stage/
+          fi
+          if [ "$RUNNER_OS" == "Windows" ]; then
+            echo "TYPE=zip" >> $GITHUB_ENV
+            echo "EXTENSION=zip" >> $GITHUB_ENV
+            cp target/${{ matrix.target }}/release/deps/${{ env.cratename }}.dll.lib target/${{ matrix.target }}/release/deps/${{ env.cratename }}.lib
+            cp target/${{ matrix.target }}/release/${{ env.cratename }}* $stage/
+            cp target/${{ matrix.target }}/release/deps/${{ env.cratename }}* $stage/
+            rm $stage/*.pdb
+          fi
+          ls $stage
+          cd $src
+
+      - name: Create macOS and Linux Archive
+        if: runner.os != 'Windows'
+        run: |
+          pushd ${{ env.STAGE }}
+          tar -czf "${{ env.ASSET_NAME }}.${{ env.EXTENSION }}" *
+          popd
+          cp "${{ env.STAGE }}/${{ env.ASSET_NAME }}.${{ env.EXTENSION }}" zipped/
+
+      - name: Create Windows Archive
+        if: runner.os == 'Windows'
+        uses: thedoctor0/zip-release@master
+        with:
+          type: ${{ env.TYPE }}
+          filename: "${{ env.ASSET_NAME }}.${{ env.EXTENSION }}"
+          path: ${{ env.STAGE }}/*.*
+          directory: zipped
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            zipped/${{ env.ASSET_NAME }}.${{ env.EXTENSION }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
