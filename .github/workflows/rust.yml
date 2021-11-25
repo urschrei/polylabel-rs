@@ -79,7 +79,7 @@ jobs:
         with:
           use-cross: ${{ matrix.use-cross }}
           command: build
-          args: --release --target=${{ matrix.target }}
+          args: --release --target=${{ matrix.target }} --features headers
       - name: Gather Assets
         run: |
           src=$(pwd)
