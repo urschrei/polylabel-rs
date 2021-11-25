@@ -8,7 +8,6 @@ keywords = ["geo", "polylabel", "gis"]
 repository = "https://github.com/urschrei/polylabel-rs"
 license = "MIT"
 edition = "2018"
-# build = "src/build.rs"
 
 [dependencies]
 libc = "0.2.29"
