@@ -1,6 +1,4 @@
-[![Build Status](https://travis-ci.org/urschrei/polylabel-rs.svg?branch=master)](https://travis-ci.org/urschrei/polylabel-rs)
-[![Build status](https://ci.appveyor.com/api/projects/status/byle0botr540kcg3?svg=true)](https://ci.appveyor.com/project/urschrei/polylabel-rs)
-[![Coverage Status](https://coveralls.io/repos/github/urschrei/polylabel-rs/badge.svg?branch=master)](https://coveralls.io/github/urschrei/polylabel-rs?branch=master)
+[![Test and Build](https://github.com/urschrei/polylabel-rs/actions/workflows/rust.yml/badge.svg)](https://github.com/urschrei/polylabel-rs/actions/workflows/rust.yml) [![Coverage Status](https://coveralls.io/repos/github/urschrei/polylabel-rs/badge.svg?branch=master)](https://coveralls.io/github/urschrei/polylabel-rs?branch=master)
 [![](https://img.shields.io/crates/v/polylabel.svg)](https://crates.io/crates/polylabel)
 # Polylabel-rs
 A Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
