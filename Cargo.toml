@@ -16,7 +16,7 @@ num-traits = "0.2.8"
 thiserror = "1.0.4"
 
 [build-dependencies]
-cbindgen = { version = "0.22.0", default-features=false, optional = true}
+cbindgen = { version = "0.23.0", default-features=false, optional = true}
 
 [dev-dependencies]
 criterion = "0.3.0"
