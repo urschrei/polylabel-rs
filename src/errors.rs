@@ -3,7 +3,7 @@
 use thiserror::Error;
 
 /// Possible Polylabel errors
-#[derive(Error, Debug, PartialEq)]
+#[derive(Error, Debug, PartialEq, Eq)]
 #[error("{0}")]
 pub enum PolylabelError {
     #[error("Couldn't calculate a centroid for the input Polygon")]
