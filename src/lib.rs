@@ -80,11 +80,11 @@ where
 
 /// Signed distance from a Qcell's centroid to a Polygon's outline
 /// Returned value is negative if the point is outside the polygon's exterior ring
-fn signed_distance<T>(x: &T, y: &T, polygon: &Polygon<T>) -> T
+fn signed_distance<T>(x: T, y: T, polygon: &Polygon<T>) -> T
 where
     T: GeoFloat,
 {
-    let point = Point::new(*x, *y);
+    let point = Point::new(x, y);
     let inside = polygon.contains(&point);
     // Use LineString distance, because Polygon distance returns 0.0 for inside
     let distance = point.euclidean_distance(polygon.exterior());
@@ -115,7 +115,7 @@ fn add_quad<T>(
     ]
     .iter()
     .for_each(|combo| {
-        let new_dist = signed_distance(&combo.0, &combo.1, polygon);
+        let new_dist = signed_distance(combo.0, combo.1, polygon);
         mpq.push(Qcell::new(
             combo.0,
             combo.1,
@@ -182,7 +182,7 @@ where
         return Ok(Point::new(bbox.min().x, bbox.min().y));
     }
     let mut h = cell_size / two;
-    let distance = signed_distance(&centroid.x(), &centroid.y(), polygon);
+    let distance = signed_distance(centroid.x(), centroid.y(), polygon);
     let max_distance = distance + T::zero() * two.sqrt();
 
     let mut best_cell = Qcell::new(
@@ -195,8 +195,8 @@ where
 
     // special case for rectangular polygons
     let bbox_cell_dist = signed_distance(
-        &(bbox.min().x + width / two),
-        &(bbox.min().y + height / two),
+        bbox.min().x + width / two,
+        bbox.min().y + height / two,
         polygon,
     );
     let bbox_cell = Qcell {
@@ -218,7 +218,7 @@ where
     while x < bbox.max().x {
         y = bbox.min().y;
         while y < bbox.max().y {
-            let latest_dist = signed_distance(&(x + h), &(y + h), polygon);
+            let latest_dist = signed_distance(x + h, y + h, polygon);
             cell_queue.push(Qcell {
                 centroid: Point::new(x + h, y + h),
                 extent: h,
