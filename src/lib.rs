@@ -230,8 +230,7 @@ where
         x = x + cell_size;
     }
     // Now try to find better solutions
-    while !cell_queue.is_empty() {
-        let cell = cell_queue.pop().ok_or(PolylabelError::EmptyQueue)?;
+    while let Some(cell) = cell_queue.pop() {
         // Update the best cell if we find a cell with greater distance
         if cell.distance > best_cell.distance {
             best_cell.centroid = Point::new(cell.centroid.x(), cell.centroid.y());
@@ -247,6 +246,7 @@ where
         h = cell.extent / two;
         add_quad(&mut cell_queue, &cell, &h, polygon);
     }
+
     // We've exhausted the queue, so return the best solution we've found
     Ok(Point::new(best_cell.centroid.x(), best_cell.centroid.y()))
 }
