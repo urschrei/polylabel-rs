@@ -39,9 +39,9 @@ impl<T> Qcell<T>
 where
     T: GeoFloat,
 {
-    fn new(x: T, y: T, h: T, distance: T, max_distance: T) -> Qcell<T> {
+    fn new(centroid: Point<T>, h: T, distance: T, max_distance: T) -> Qcell<T> {
         Qcell {
-            centroid: Point::new(x, y),
+            centroid,
             extent: h,
             distance,
             max_distance,
@@ -114,11 +114,10 @@ fn add_quad<T>(
         (centroid_x + *new_height, centroid_y + *new_height),
     ]
     .iter()
-    .for_each(|combo| {
-        let new_dist = signed_distance(combo.0, combo.1, polygon);
+    .for_each(|&(x, y)| {
+        let new_dist = signed_distance(x, y, polygon);
         mpq.push(Qcell::new(
-            combo.0,
-            combo.1,
+            Point::new(x, y),
             *new_height,
             new_dist,
             new_dist + *new_height * two.sqrt(),
@@ -185,13 +184,7 @@ where
     let distance = signed_distance(centroid.x(), centroid.y(), polygon);
     let max_distance = distance + T::zero() * two.sqrt();
 
-    let mut best_cell = Qcell::new(
-        centroid.x(),
-        centroid.y(),
-        T::zero(),
-        distance,
-        max_distance,
-    );
+    let mut best_cell = Qcell::new(centroid, T::zero(), distance, max_distance);
 
     // special case for rectangular polygons
     let bbox_cell_dist = signed_distance(
