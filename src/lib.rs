@@ -80,11 +80,10 @@ where
 
 /// Signed distance from a Qcell's centroid to a Polygon's outline
 /// Returned value is negative if the point is outside the polygon's exterior ring
-fn signed_distance<T>(x: T, y: T, polygon: &Polygon<T>) -> T
+fn signed_distance<T>(point: Point<T>, polygon: &Polygon<T>) -> T
 where
     T: GeoFloat,
 {
-    let point = Point::new(x, y);
     let inside = polygon.contains(&point);
     // Use LineString distance, because Polygon distance returns 0.0 for inside
     let distance = point.euclidean_distance(polygon.exterior());
@@ -115,7 +114,7 @@ fn add_quad<T>(
     ]
     .iter()
     .for_each(|&(x, y)| {
-        let new_dist = signed_distance(x, y, polygon);
+        let new_dist = signed_distance(Point::new(x, y), polygon);
         mpq.push(Qcell::new(
             Point::new(x, y),
             *half_extent,
@@ -181,17 +180,13 @@ where
         return Ok(Point::new(bbox.min().x, bbox.min().y));
     }
     let mut half_extent = cell_size / two;
-    let distance = signed_distance(centroid.x(), centroid.y(), polygon);
+    let distance = signed_distance(centroid, polygon);
     let max_distance = distance + T::zero() * two.sqrt();
 
     let mut best_cell = Qcell::new(centroid, T::zero(), distance, max_distance);
 
     // special case for rectangular polygons
-    let bbox_cell_dist = signed_distance(
-        bbox.min().x + width / two,
-        bbox.min().y + height / two,
-        polygon,
-    );
+    let bbox_cell_dist = signed_distance(Point::from(bbox.center()), polygon);
     let bbox_cell = Qcell {
         centroid: Point::new(bbox.min().x + width / two, bbox.min().y + height / two),
         half_extent: T::zero(),
@@ -211,7 +206,8 @@ where
     while x < bbox.max().x {
         y = bbox.min().y;
         while y < bbox.max().y {
-            let latest_dist = signed_distance(x + half_extent, y + half_extent, polygon);
+            let point = Point::new(x + half_extent, y + half_extent);
+            let latest_dist = signed_distance(point, polygon);
             cell_queue.push(Qcell {
                 centroid: Point::new(x + half_extent, y + half_extent),
                 half_extent,
