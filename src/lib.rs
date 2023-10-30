@@ -98,28 +98,29 @@ where
 fn add_quad<T>(
     mpq: &mut BinaryHeap<Qcell<T>>,
     cell: &Qcell<T>,
-    half_extent: &T,
+    half_extent: T,
     polygon: &Polygon<T>,
 ) where
     T: GeoFloat,
 {
     let two = T::one() + T::one();
-    let centroid_x = cell.centroid.x();
-    let centroid_y = cell.centroid.y();
     [
-        (centroid_x - *half_extent, centroid_y - *half_extent),
-        (centroid_x + *half_extent, centroid_y - *half_extent),
-        (centroid_x - *half_extent, centroid_y + *half_extent),
-        (centroid_x + *half_extent, centroid_y + *half_extent),
+        (-T::one(), -T::one()),
+        (T::one(), -T::one()),
+        (-T::one(), T::one()),
+        (T::one(), T::one()),
     ]
-    .iter()
-    .for_each(|&(x, y)| {
-        let new_dist = signed_distance(Point::new(x, y), polygon);
+    .map(|(dx, dy)| (dx * half_extent, dy * half_extent))
+    .map(|(dx, dy)| Point::new(dx, dy))
+    .map(|delta| cell.centroid + delta)
+    .into_iter()
+    .for_each(|new_centeroid| {
+        let new_dist = signed_distance(new_centeroid, polygon);
         mpq.push(Qcell::new(
-            Point::new(x, y),
-            *half_extent,
+            new_centeroid,
+            half_extent,
             new_dist,
-            new_dist + *half_extent * two.sqrt(),
+            new_dist + half_extent * two.sqrt(),
         ));
     });
 }
@@ -233,7 +234,7 @@ where
         }
         // Otherwise, add a new quadtree node and start again
         half_extent = cell.half_extent / two;
-        add_quad(&mut cell_queue, &cell, &half_extent, polygon);
+        add_quad(&mut cell_queue, &cell, half_extent, polygon);
     }
 
     // We've exhausted the queue, so return the best solution we've found
