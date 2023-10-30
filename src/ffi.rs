@@ -56,11 +56,11 @@ fn reconstitute2(arr: WrapperArray) -> Vec<Vec<[f64; 2]>> {
 ///
 /// Accepts three arguments:
 ///
-/// - an exterior ring [`Array`](struct.Array.html)
-/// - zero or more interior rings [`WrapperArray`](struct.WrapperArray.html)
+/// - an exterior ring representing a Polygon shell or closed LineString
+/// - zero or more interior rings representing Polygon holes
 /// - a tolerance `c_double`.
 /// If an error occurs while attempting to calculate the label position, the resulting point coordinates
-/// will be NaN, NaN.
+/// will be `NaN, NaN`.
 #[no_mangle]
 pub extern "C" fn polylabel_ffi(
     outer: Array,

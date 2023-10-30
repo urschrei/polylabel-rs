@@ -36,6 +36,7 @@ A command-line tool is available: `cargo install polylabel_cmd`. This enables th
 https://docs.rs/polylabel
 
 ## FFI
+### Enable the Cargo `ffi` and `headers` features to enable this functionality
 Call `polylabel_ffi` with the following three mandatory arguments:
 - [`Array`](https://docs.rs/polylabel/1.0.3/polylabel/struct.Array.html) (a struct with two fields):
     - `data`: a void pointer to an array of two-element `c_double` arrays, each of which represents a point on the exterior Polygon shell)
@@ -49,7 +50,7 @@ The function returns a [struct](https://docs.rs/polylabel/1.0.3/polylabel/struct
 - `x_pos`
 - `y_pos`
 
-A Python example is available in [`ffi.py`](ffi.py)
+Headers are provided in the `include` directory. A Python example is available in [`ffi.py`](ffi.py)
 
 An auto-generated header file is available at [`include/header.h`](include/header.h)
 
