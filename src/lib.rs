@@ -325,10 +325,7 @@ mod tests {
             distance: 4.0,
             max_distance: 9.0,
         };
-        let mut v = vec![];
-        v.push(a);
-        v.push(b);
-        v.push(c);
+        let v = vec![a, b, c];
         let mut q = BinaryHeap::from(v);
         assert_eq!(q.pop().unwrap().max_distance, 9.0);
         assert_eq!(q.pop().unwrap().max_distance, 8.0);

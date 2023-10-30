@@ -100,7 +100,7 @@ mod tests {
     fn gen_wrapperarray(v: Vec<Vec<[f64; 2]>>) -> WrapperArray {
         let converted: Vec<Array> = v.into_iter().map(gen_array).collect();
         let array2 = WrapperArray {
-            data: converted.as_ptr() as *const Array,
+            data: converted.as_ptr(),
             len: converted.len() as size_t,
         };
         mem::forget(converted);
