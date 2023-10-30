@@ -28,7 +28,7 @@ where
     // The cell's centroid
     centroid: Point<T>,
     // Half of the parent node's extent
-    extent: T,
+    half_extent: T,
     // Distance from centroid to polygon
     distance: T,
     // Maximum distance to polygon within a cell
@@ -39,10 +39,10 @@ impl<T> Qcell<T>
 where
     T: GeoFloat,
 {
-    fn new(centroid: Point<T>, h: T, distance: T, max_distance: T) -> Qcell<T> {
+    fn new(centroid: Point<T>, half_extent: T, distance: T, max_distance: T) -> Qcell<T> {
         Qcell {
             centroid,
-            extent: h,
+            half_extent,
             distance,
             max_distance,
         }
@@ -99,7 +99,7 @@ where
 fn add_quad<T>(
     mpq: &mut BinaryHeap<Qcell<T>>,
     cell: &Qcell<T>,
-    new_height: &T,
+    half_extent: &T,
     polygon: &Polygon<T>,
 ) where
     T: GeoFloat,
@@ -108,19 +108,19 @@ fn add_quad<T>(
     let centroid_x = cell.centroid.x();
     let centroid_y = cell.centroid.y();
     [
-        (centroid_x - *new_height, centroid_y - *new_height),
-        (centroid_x + *new_height, centroid_y - *new_height),
-        (centroid_x - *new_height, centroid_y + *new_height),
-        (centroid_x + *new_height, centroid_y + *new_height),
+        (centroid_x - *half_extent, centroid_y - *half_extent),
+        (centroid_x + *half_extent, centroid_y - *half_extent),
+        (centroid_x - *half_extent, centroid_y + *half_extent),
+        (centroid_x + *half_extent, centroid_y + *half_extent),
     ]
     .iter()
     .for_each(|&(x, y)| {
         let new_dist = signed_distance(x, y, polygon);
         mpq.push(Qcell::new(
             Point::new(x, y),
-            *new_height,
+            *half_extent,
             new_dist,
-            new_dist + *new_height * two.sqrt(),
+            new_dist + *half_extent * two.sqrt(),
         ));
     });
 }
@@ -180,7 +180,7 @@ where
     if cell_size == T::zero() {
         return Ok(Point::new(bbox.min().x, bbox.min().y));
     }
-    let mut h = cell_size / two;
+    let mut half_extent = cell_size / two;
     let distance = signed_distance(centroid.x(), centroid.y(), polygon);
     let max_distance = distance + T::zero() * two.sqrt();
 
@@ -194,7 +194,7 @@ where
     );
     let bbox_cell = Qcell {
         centroid: Point::new(bbox.min().x + width / two, bbox.min().y + height / two),
-        extent: T::zero(),
+        half_extent: T::zero(),
         distance: bbox_cell_dist,
         max_distance: bbox_cell_dist + T::zero() * two.sqrt(),
     };
@@ -211,12 +211,12 @@ where
     while x < bbox.max().x {
         y = bbox.min().y;
         while y < bbox.max().y {
-            let latest_dist = signed_distance(x + h, y + h, polygon);
+            let latest_dist = signed_distance(x + half_extent, y + half_extent, polygon);
             cell_queue.push(Qcell {
-                centroid: Point::new(x + h, y + h),
-                extent: h,
+                centroid: Point::new(x + half_extent, y + half_extent),
+                half_extent,
                 distance: latest_dist,
-                max_distance: latest_dist + h * two.sqrt(),
+                max_distance: latest_dist + half_extent * two.sqrt(),
             });
             y = y + cell_size;
         }
@@ -227,7 +227,7 @@ where
         // Update the best cell if we find a cell with greater distance
         if cell.distance > best_cell.distance {
             best_cell.centroid = Point::new(cell.centroid.x(), cell.centroid.y());
-            best_cell.extent = cell.extent;
+            best_cell.half_extent = cell.half_extent;
             best_cell.distance = cell.distance;
             best_cell.max_distance = cell.max_distance;
         }
@@ -236,8 +236,8 @@ where
             continue;
         }
         // Otherwise, add a new quadtree node and start again
-        h = cell.extent / two;
-        add_quad(&mut cell_queue, &cell, &h, polygon);
+        half_extent = cell.half_extent / two;
+        add_quad(&mut cell_queue, &cell, &half_extent, polygon);
     }
 
     // We've exhausted the queue, so return the best solution we've found
@@ -309,19 +309,19 @@ mod tests {
     fn test_queue() {
         let a = Qcell {
             centroid: Point::new(1.0, 2.0),
-            extent: 3.0,
+            half_extent: 3.0,
             distance: 4.0,
             max_distance: 8.0,
         };
         let b = Qcell {
             centroid: Point::new(1.0, 2.0),
-            extent: 3.0,
+            half_extent: 3.0,
             distance: 4.0,
             max_distance: 7.0,
         };
         let c = Qcell {
             centroid: Point::new(1.0, 2.0),
-            extent: 3.0,
+            half_extent: 3.0,
             distance: 4.0,
             max_distance: 9.0,
         };
