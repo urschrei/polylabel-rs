@@ -125,7 +125,6 @@ where
     T: GeoFloat,
 {
     pub fn new(bbox: Rect<T>, half_extent: T, cell_size: T, polygon: &Polygon<T>) -> Self {
-        let two = T::one() + T::one();
         // Priority queue
         let mut cell_queue: BinaryHeap<Qcell<T>> = BinaryHeap::new();
         // Build an initial quadtree node, which covers the Polygon
@@ -134,14 +133,9 @@ where
         while x < bbox.max().x {
             y = bbox.min().y;
             while y < bbox.max().y {
-                let point = Point::new(x + half_extent, y + half_extent);
-                let latest_dist = signed_distance(point, polygon);
-                cell_queue.push(Qcell {
-                    centroid: Point::new(x + half_extent, y + half_extent),
-                    half_extent,
-                    distance: latest_dist,
-                    max_distance: latest_dist + half_extent * two.sqrt(),
-                });
+                let centroid = Point::new(x + half_extent, y + half_extent);
+                let new_cell = Qcell::new(centroid, half_extent, polygon);
+                cell_queue.push(new_cell);
                 y = y + cell_size;
             }
             x = x + cell_size;
