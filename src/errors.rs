@@ -10,6 +10,4 @@ pub enum PolylabelError {
     CentroidCalculation,
     #[error("Couldn't calculate a bounding box for the input Polygon")]
     RectCalculation,
-    #[error("The priority queue is unexpectedly empty. This is a bug!")]
-    EmptyQueue,
 }
