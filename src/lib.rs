@@ -4,7 +4,7 @@
 )]
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 //! for finding the optimum position of a polygon label.
-use geo::{prelude::*, Rect};
+use geo::{prelude::*, Coord, Rect};
 use geo::{GeoFloat, Point, Polygon};
 use num_traits::FromPrimitive;
 use std::cmp::Ordering;
@@ -125,21 +125,30 @@ where
     T: GeoFloat,
 {
     pub fn new(bbox: Rect<T>, half_extent: T, cell_size: T, polygon: &Polygon<T>) -> Self {
-        // Priority queue
         let mut cell_queue: BinaryHeap<Qcell<T>> = BinaryHeap::new();
-        // Build an initial quadtree node, which covers the Polygon
-        let mut x = bbox.min().x;
-        let mut y;
-        while x < bbox.max().x {
-            y = bbox.min().y;
-            while y < bbox.max().y {
-                let centroid = Point::new(x + half_extent, y + half_extent);
-                let new_cell = Qcell::new(centroid, half_extent, polygon);
-                cell_queue.push(new_cell);
-                y = y + cell_size;
+
+        let nx = (bbox.width() / cell_size).ceil().to_usize();
+        let ny = (bbox.height() / cell_size).ceil().to_usize();
+
+        match (nx, ny) {
+            (Some(nx), Some(ny)) => {
+                let one = T::one();
+                let delta_mid = Coord { x: one, y: one } * half_extent;
+                let origin = bbox.min();
+                let inital_points = (0..nx)
+                    .flat_map(|x| (0..ny).map(move |y| (x, y)))
+                    .filter_map(|(x, y)| Some((T::from(x)?, T::from(y)?)))
+                    .map(|(x, y)| Coord { x, y } * cell_size)
+                    .map(|delta_cell| origin + delta_cell + delta_mid)
+                    .map(Point::from)
+                    .map(|centroid| Qcell::new(centroid, half_extent, polygon));
+                cell_queue.extend(inital_points);
             }
-            x = x + cell_size;
+            _ => {
+                // Do nothing, maybe error instead?
+            }
         }
+
         Self(cell_queue)
     }
 
@@ -230,7 +239,7 @@ where
     while let Some(cell) = cell_queue.pop() {
         // Update the best cell if we find a cell with greater distance
         if cell.distance > best_cell.distance {
-            best_cell.centroid = Point::new(cell.centroid.x(), cell.centroid.y());
+            best_cell.centroid = cell.centroid;
             best_cell.half_extent = cell.half_extent;
             best_cell.distance = cell.distance;
             best_cell.max_distance = cell.max_distance;
