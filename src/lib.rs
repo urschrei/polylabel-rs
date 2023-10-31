@@ -39,7 +39,10 @@ impl<T> Qcell<T>
 where
     T: GeoFloat,
 {
-    fn new(centroid: Point<T>, half_extent: T, distance: T, max_distance: T) -> Qcell<T> {
+    fn new(centroid: Point<T>, half_extent: T, polygon: &Polygon<T>) -> Qcell<T> {
+        let two = T::one() + T::one();
+        let distance = signed_distance(centroid, polygon);
+        let max_distance = distance + half_extent * two.sqrt();
         Qcell {
             centroid,
             half_extent,
@@ -103,7 +106,6 @@ fn add_quad<T>(
 ) where
     T: GeoFloat,
 {
-    let two = T::one() + T::one();
     [
         (-T::one(), -T::one()),
         (T::one(), -T::one()),
@@ -115,13 +117,7 @@ fn add_quad<T>(
     .map(|delta| cell.centroid + delta)
     .into_iter()
     .for_each(|new_centeroid| {
-        let new_dist = signed_distance(new_centeroid, polygon);
-        mpq.push(Qcell::new(
-            new_centeroid,
-            half_extent,
-            new_dist,
-            new_dist + half_extent * two.sqrt(),
-        ));
+        mpq.push(Qcell::new(new_centeroid, half_extent, polygon));
     });
 }
 
@@ -181,10 +177,8 @@ where
         return Ok(Point::new(bbox.min().x, bbox.min().y));
     }
     let mut half_extent = cell_size / two;
-    let distance = signed_distance(centroid, polygon);
-    let max_distance = distance + T::zero() * two.sqrt();
 
-    let mut best_cell = Qcell::new(centroid, T::zero(), distance, max_distance);
+    let mut best_cell = Qcell::new(centroid, T::zero(), polygon);
 
     // special case for rectangular polygons
     let bbox_cell_dist = signed_distance(Point::from(bbox.center()), polygon);
