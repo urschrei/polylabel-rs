@@ -124,8 +124,11 @@ impl<T> QuadTree<T>
 where
     T: GeoFloat,
 {
-    pub fn new(bbox: Rect<T>, half_extent: T, cell_size: T, polygon: &Polygon<T>) -> Self {
+    pub fn new(bbox: Rect<T>, half_extent: T, polygon: &Polygon<T>) -> Self {
         let mut cell_queue: BinaryHeap<Qcell<T>> = BinaryHeap::new();
+
+        let two = T::one() + T::one();
+        let cell_size = half_extent * two;
 
         let nx = (bbox.width() / cell_size).ceil().to_usize();
         let ny = (bbox.height() / cell_size).ceil().to_usize();
@@ -233,7 +236,7 @@ where
         best_cell = bbox_cell;
     }
 
-    let mut cell_queue = QuadTree::<T>::new(bbox, half_extent, cell_size, polygon);
+    let mut cell_queue = QuadTree::<T>::new(bbox, half_extent, polygon);
 
     // Now try to find better solutions
     while let Some(cell) = cell_queue.pop() {
