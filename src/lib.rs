@@ -162,7 +162,7 @@ where
             (-T::one(), T::one()),
             (T::one(), T::one()),
         ]
-        .map(|(dx, dy)| (dx * half_extent, dy * half_extent))
+        .map(|(sign_x, sign_y)| (sign_x * half_extent, sign_y * half_extent))
         .map(|(dx, dy)| Point::new(dx, dy))
         .map(|delta| cell.centroid + delta)
         .map(|centeroid| Qcell::new(centeroid, half_extent, polygon));
@@ -210,54 +210,57 @@ where
     if polygon.signed_area() == T::zero() {
         return Ok(Point::new(T::zero(), T::zero()));
     }
-    let two = T::one() + T::one();
-    // Initial best cell values
-    let centroid = polygon
-        .centroid()
-        .ok_or(PolylabelError::CentroidCalculation)?;
+
     let bbox = polygon
         .bounding_rect()
         .ok_or(PolylabelError::RectCalculation)?;
-    let width = bbox.max().x - bbox.min().x;
-    let height = bbox.max().y - bbox.min().y;
-    let cell_size = width.min(height);
+    let cell_size = bbox.width().min(bbox.height());
     // Special case for degenerate polygons
     if cell_size == T::zero() {
-        return Ok(Point::new(bbox.min().x, bbox.min().y));
+        return Ok(Point::from(bbox.min()));
     }
+
+    let two = T::one() + T::one();
     let mut half_extent = cell_size / two;
 
-    let mut best_cell = Qcell::new(centroid, T::zero(), polygon);
+    // initial best guess using centroid
+    let centroid = polygon
+        .centroid()
+        .ok_or(PolylabelError::CentroidCalculation)?;
+    let centroid_cell = Qcell::new(centroid, T::zero(), polygon);
 
-    // special case for rectangular polygons
+    // special case guess for rectangular polygons
     let bbox_cell = Qcell::new(bbox.centroid(), T::zero(), polygon);
 
-    if bbox_cell.distance > best_cell.distance {
-        best_cell = bbox_cell;
-    }
+    // deciding which initial guess was better
+    let mut best_cell = if bbox_cell.distance < centroid_cell.distance {
+        bbox_cell
+    } else {
+        centroid_cell
+    };
 
+    // setup priority queue
     let mut cell_queue = QuadTree::<T>::new(bbox, half_extent, polygon);
 
     // Now try to find better solutions
     while let Some(cell) = cell_queue.pop() {
         // Update the best cell if we find a cell with greater distance
         if cell.distance > best_cell.distance {
-            best_cell.centroid = cell.centroid;
-            best_cell.half_extent = cell.half_extent;
-            best_cell.distance = cell.distance;
-            best_cell.max_distance = cell.max_distance;
+            best_cell = Qcell { ..cell };
         }
+
         // Bail out of this iteration if we can't find a better solution
         if cell.max_distance - best_cell.distance <= *tolerance {
             continue;
         }
+
         // Otherwise, add a new quadtree node and start again
         half_extent = cell.half_extent / two;
         cell_queue.add_quad(&cell, half_extent, polygon);
     }
 
     // We've exhausted the queue, so return the best solution we've found
-    Ok(Point::new(best_cell.centroid.x(), best_cell.centroid.y()))
+    Ok(best_cell.centroid)
 }
 
 #[cfg(test)]
