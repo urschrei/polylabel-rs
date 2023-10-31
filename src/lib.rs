@@ -181,13 +181,7 @@ where
     let mut best_cell = Qcell::new(centroid, T::zero(), polygon);
 
     // special case for rectangular polygons
-    let bbox_cell_dist = signed_distance(Point::from(bbox.center()), polygon);
-    let bbox_cell = Qcell {
-        centroid: Point::new(bbox.min().x + width / two, bbox.min().y + height / two),
-        half_extent: T::zero(),
-        distance: bbox_cell_dist,
-        max_distance: bbox_cell_dist + T::zero() * two.sqrt(),
-    };
+    let bbox_cell = Qcell::new(bbox.centroid(), T::zero(), polygon);
 
     if bbox_cell.distance > best_cell.distance {
         best_cell = bbox_cell;
