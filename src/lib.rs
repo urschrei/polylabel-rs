@@ -4,12 +4,13 @@
 )]
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 //! for finding the optimum position of a polygon label.
-use geo::prelude::*;
+use geo::{prelude::*, Rect};
 use geo::{GeoFloat, Point, Polygon};
 use num_traits::FromPrimitive;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::iter::Sum;
+use std::ops::{Deref, DerefMut};
 
 pub mod errors;
 use errors::PolylabelError;
@@ -97,28 +98,70 @@ where
     }
 }
 
-/// Add a new Quadtree node made up of four `Qcell`s to the binary heap
-fn add_quad<T>(
-    mpq: &mut BinaryHeap<Qcell<T>>,
-    cell: &Qcell<T>,
-    half_extent: T,
-    polygon: &Polygon<T>,
-) where
+struct QuadTree<T>(pub BinaryHeap<Qcell<T>>)
+where
+    T: GeoFloat;
+
+impl<T> Deref for QuadTree<T>
+where
     T: GeoFloat,
 {
-    [
-        (-T::one(), -T::one()),
-        (T::one(), -T::one()),
-        (-T::one(), T::one()),
-        (T::one(), T::one()),
-    ]
-    .map(|(dx, dy)| (dx * half_extent, dy * half_extent))
-    .map(|(dx, dy)| Point::new(dx, dy))
-    .map(|delta| cell.centroid + delta)
-    .into_iter()
-    .for_each(|new_centeroid| {
-        mpq.push(Qcell::new(new_centeroid, half_extent, polygon));
-    });
+    type Target = BinaryHeap<Qcell<T>>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl<T> DerefMut for QuadTree<T>
+where
+    T: GeoFloat,
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<T> QuadTree<T>
+where
+    T: GeoFloat,
+{
+    pub fn new(bbox: Rect<T>, half_extent: T, cell_size: T, polygon: &Polygon<T>) -> Self {
+        let two = T::one() + T::one();
+        // Priority queue
+        let mut cell_queue: BinaryHeap<Qcell<T>> = BinaryHeap::new();
+        // Build an initial quadtree node, which covers the Polygon
+        let mut x = bbox.min().x;
+        let mut y;
+        while x < bbox.max().x {
+            y = bbox.min().y;
+            while y < bbox.max().y {
+                let point = Point::new(x + half_extent, y + half_extent);
+                let latest_dist = signed_distance(point, polygon);
+                cell_queue.push(Qcell {
+                    centroid: Point::new(x + half_extent, y + half_extent),
+                    half_extent,
+                    distance: latest_dist,
+                    max_distance: latest_dist + half_extent * two.sqrt(),
+                });
+                y = y + cell_size;
+            }
+            x = x + cell_size;
+        }
+        Self(cell_queue)
+    }
+
+    pub fn add_quad(&mut self, cell: &Qcell<T>, half_extent: T, polygon: &Polygon<T>) {
+        let new_cells = [
+            (-T::one(), -T::one()),
+            (T::one(), -T::one()),
+            (-T::one(), T::one()),
+            (T::one(), T::one()),
+        ]
+        .map(|(dx, dy)| (dx * half_extent, dy * half_extent))
+        .map(|(dx, dy)| Point::new(dx, dy))
+        .map(|delta| cell.centroid + delta)
+        .map(|centeroid| Qcell::new(centeroid, half_extent, polygon));
+        self.extend(new_cells);
+    }
 }
 
 /// Calculate a Polygon's ideal label position by calculating its ✨pole of inaccessibility✨
@@ -187,26 +230,8 @@ where
         best_cell = bbox_cell;
     }
 
-    // Priority queue
-    let mut cell_queue: BinaryHeap<Qcell<T>> = BinaryHeap::new();
-    // Build an initial quadtree node, which covers the Polygon
-    let mut x = bbox.min().x;
-    let mut y;
-    while x < bbox.max().x {
-        y = bbox.min().y;
-        while y < bbox.max().y {
-            let point = Point::new(x + half_extent, y + half_extent);
-            let latest_dist = signed_distance(point, polygon);
-            cell_queue.push(Qcell {
-                centroid: Point::new(x + half_extent, y + half_extent),
-                half_extent,
-                distance: latest_dist,
-                max_distance: latest_dist + half_extent * two.sqrt(),
-            });
-            y = y + cell_size;
-        }
-        x = x + cell_size;
-    }
+    let mut cell_queue = QuadTree::<T>::new(bbox, half_extent, cell_size, polygon);
+
     // Now try to find better solutions
     while let Some(cell) = cell_queue.pop() {
         // Update the best cell if we find a cell with greater distance
@@ -222,7 +247,7 @@ where
         }
         // Otherwise, add a new quadtree node and start again
         half_extent = cell.half_extent / two;
-        add_quad(&mut cell_queue, &cell, half_extent, polygon);
+        cell_queue.add_quad(&cell, half_extent, polygon);
     }
 
     // We've exhausted the queue, so return the best solution we've found
