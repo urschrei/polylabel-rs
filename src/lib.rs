@@ -169,7 +169,7 @@ where
         .map(|(sign_x, sign_y)| (sign_x * half_extent, sign_y * half_extent))
         .map(|(dx, dy)| Point::new(dx, dy))
         .map(|delta| cell.centroid + delta)
-        .map(|centeroid| Qcell::new(centeroid, half_extent, polygon));
+        .map(|centroid| Qcell::new(centroid, half_extent, polygon));
         self.extend(new_cells);
     }
 }
