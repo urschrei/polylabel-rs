@@ -6,14 +6,14 @@ defaults:
 
 env:
   cratename: polylabel
-  MACOSX_DEPLOYMENT_TARGET: 10.9
+  rustflags: -C rpath
 
 name: Test and Build
 
 jobs:
   test:
     if: github.event_name == 'push' && !contains(github.ref, 'refs/tags/')
-    name: Test on ${{ matrix.os }}
+    name: Test on ${{ matrix.os }} (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -25,10 +25,11 @@ jobs:
           target: x86_64-unknown-linux-gnu
           use-cross: false
         - build: macos
-          os: macos-11
+          os: macos-latest
           rust: stable
           target: x86_64-apple-darwin
           use-cross: false
+          deptarget: 10.9
         - build: windows
           os: windows-latest
           rust: stable
@@ -41,6 +42,8 @@ jobs:
           toolchain: stable
           target: ${{ matrix.target }}
       - uses: actions-rs/cargo@v1
+        env:
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deptarget }}
         with:
           use-cross: ${{ matrix.use-cross }}
           command: test
@@ -48,7 +51,7 @@ jobs:
 
   build:
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
-    name: Build and release on ${{ matrix.os }}
+    name: Build and release on ${{ matrix.os }} (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -59,27 +62,49 @@ jobs:
           rust: stable
           target: x86_64-unknown-linux-gnu
           use-cross: true
+        - build: linux
+          os: ubuntu-latest
+          rust: stable
+          target: aarch64-unknown-linux-gnu
+          use-cross: true
         - build: macos
           os: macos-latest
           rust: stable
           target: x86_64-apple-darwin
           use-cross: false
+          deptarget: 10.9
+        - build: macos
+          os: macos-latest
+          rust: stable
+          target: aarch64-apple-darwin
+          use-cross: false
+          deptarget: 11.0
         - build: windows
           os: windows-latest
           rust: stable
           target: x86_64-pc-windows-msvc
           use-cross: false
     steps:
+      - name: Switch to macOS 13.x SDK
+        if: matrix.target == 'aarch64-apple-darwin'
+        run: |
+          xcodebuild -showsdks
+          SDKROOT=$(xcrun -sdk macosx13.1 --show-sdk-path)
       - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
           target: ${{ matrix.target }}
       - uses: actions-rs/cargo@v1
+        env:
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deptarget }}
         with:
           use-cross: ${{ matrix.use-cross }}
           command: build
-          args: --release --target=${{ matrix.target }} --features headers,ffi
+          args: --release --target=${{ matrix.target }} --features headers
+      - name: Install aarch64 related packages
+        if: matrix.os == 'ubuntu-latest' && matrix.target == 'aarch64-unknown-linux-gnu'
+        run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu qemu-system-arm
       - name: Gather Assets
         run: |
           src=$(pwd)
@@ -106,7 +131,11 @@ jobs:
             echo "TYPE=tar" >> $GITHUB_ENV
             echo "EXTENSION=tar.gz" >> $GITHUB_ENV
             for lib in target/${{ matrix.target }}/release/*.so; do
-                strip -s $lib
+                if [ "${{ matrix.target }}" == "aarch64-unknown-linux-gnu" ]; then
+                    aarch64-linux-gnu-strip -s $lib
+                else
+                    strip -s $lib
+                fi
             done
             cp target/${{ matrix.target }}/release/*.so $stage/
           fi
@@ -114,13 +143,15 @@ jobs:
             echo "TYPE=tar" >> $GITHUB_ENV
             echo "EXTENSION=tar.gz" >> $GITHUB_ENV
             for lib in target/${{ matrix.target }}/release/*.dylib; do
+                install_name_tool -id "@rpath/lib${{ env.cratename }}.dylib" $lib
+                otool -L $lib
                 strip -ur $lib
             done
             cp target/${{ matrix.target }}/release/*.dylib $stage/
           fi
           if [ "$RUNNER_OS" == "Windows" ]; then
-            echo "TYPE=zip" >> $GITHUB_ENV
-            echo "EXTENSION=zip" >> $GITHUB_ENV
+            echo "TYPE=tar" >> $GITHUB_ENV
+            echo "EXTENSION=tar.gz" >> $GITHUB_ENV
             cp target/${{ matrix.target }}/release/deps/${{ env.cratename }}.dll.lib target/${{ matrix.target }}/release/deps/${{ env.cratename }}.lib
             cp target/${{ matrix.target }}/release/${{ env.cratename }}* $stage/
             cp target/${{ matrix.target }}/release/deps/${{ env.cratename }}* $stage/
@@ -129,22 +160,12 @@ jobs:
           ls $stage
           cd $src
 
-      - name: Create macOS and Linux Archive
-        if: runner.os != 'Windows'
+      - name: Create archive
         run: |
           pushd ${{ env.STAGE }}
           tar -czf "${{ env.ASSET_NAME }}.${{ env.EXTENSION }}" *
           popd
           cp "${{ env.STAGE }}/${{ env.ASSET_NAME }}.${{ env.EXTENSION }}" zipped/
-
-      - name: Create Windows Archive
-        if: runner.os == 'Windows'
-        uses: thedoctor0/zip-release@master
-        with:
-          type: ${{ env.TYPE }}
-          filename: "${{ env.ASSET_NAME }}.${{ env.EXTENSION }}"
-          path: ${{ env.STAGE }}/*.*
-          directory: zipped
 
       - name: Release
         uses: softprops/action-gh-release@v1
