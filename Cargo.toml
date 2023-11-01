@@ -1,6 +1,6 @@
 [package]
 name = "polylabel"
-version = "2.5.0"
+version = "3.0.0"
 authors = ["Stephan Hügel <urschrei@gmail.com>"]
 description = "A Rust implementation of the Polylabel algorithm for finding optimum polygon label positions."
 readme = "README.md"
@@ -10,7 +10,7 @@ license = "MIT"
 edition = "2021"
 
 [dependencies]
-libc = "0.2.149"
+libc = {version = "0.2.149", default-features=false, optional = true}
 geo = "0.26.0"
 num-traits = "0.2.8"
 thiserror = "1.0.4"
@@ -23,6 +23,7 @@ criterion = "0.4.0"
 
 [features]
 headers = ["cbindgen"]
+ffi = ["libc"]
 
 [lib]
 name = "polylabel"
@@ -39,3 +40,6 @@ lto = true
 name = "benchmark"
 harness = false
 
+[package.metadata.docs.rs]
+# Features to pass to Cargo (default: [])
+features = ["ffi"]

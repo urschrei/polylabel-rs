@@ -4,6 +4,8 @@
 )]
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 //! for finding the optimum position of a polygon label.
+//!
+//! ffi bindings are provided: enable the `ffi` and `headers` features when building the crate.
 use geo::{prelude::*, Coord, Rect};
 use geo::{GeoFloat, Point, Polygon};
 use num_traits::FromPrimitive;
@@ -16,8 +18,10 @@ pub mod errors;
 use errors::PolylabelError;
 
 #[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "ffi")]
 mod ffi;
 #[cfg(not(target_arch = "wasm32"))]
+#[cfg(feature = "ffi")]
 pub use crate::ffi::{polylabel_ffi, Array, Position, WrapperArray};
 
 /// Represention of a Quadtree node's cells. A node contains four Qcells.
