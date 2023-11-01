@@ -4,12 +4,13 @@
 )]
 //! This crate provides a Rust implementation of the [Polylabel](https://github.com/mapbox/polylabel) algorithm
 //! for finding the optimum position of a polygon label.
-use geo::prelude::*;
+use geo::{prelude::*, Coord, Rect};
 use geo::{GeoFloat, Point, Polygon};
 use num_traits::FromPrimitive;
 use std::cmp::Ordering;
 use std::collections::BinaryHeap;
 use std::iter::Sum;
+use std::ops::{Deref, DerefMut};
 
 pub mod errors;
 use errors::PolylabelError;
@@ -28,7 +29,7 @@ where
     // The cell's centroid
     centroid: Point<T>,
     // Half of the parent node's extent
-    extent: T,
+    half_extent: T,
     // Distance from centroid to polygon
     distance: T,
     // Maximum distance to polygon within a cell
@@ -39,10 +40,13 @@ impl<T> Qcell<T>
 where
     T: GeoFloat,
 {
-    fn new(x: T, y: T, h: T, distance: T, max_distance: T) -> Qcell<T> {
+    fn new(centroid: Point<T>, half_extent: T, polygon: &Polygon<T>) -> Qcell<T> {
+        let two = T::one() + T::one();
+        let distance = signed_distance(centroid, polygon);
+        let max_distance = distance + half_extent * two.sqrt();
         Qcell {
-            centroid: Point::new(x, y),
-            extent: h,
+            centroid,
+            half_extent,
             distance,
             max_distance,
         }
@@ -80,11 +84,10 @@ where
 
 /// Signed distance from a Qcell's centroid to a Polygon's outline
 /// Returned value is negative if the point is outside the polygon's exterior ring
-fn signed_distance<T>(x: T, y: T, polygon: &Polygon<T>) -> T
+fn signed_distance<T>(point: Point<T>, polygon: &Polygon<T>) -> T
 where
     T: GeoFloat,
 {
-    let point = Point::new(x, y);
     let inside = polygon.contains(&point);
     // Use LineString distance, because Polygon distance returns 0.0 for inside
     let distance = point.euclidean_distance(polygon.exterior());
@@ -95,35 +98,76 @@ where
     }
 }
 
-/// Add a new Quadtree node made up of four `Qcell`s to the binary heap
-fn add_quad<T>(
-    mpq: &mut BinaryHeap<Qcell<T>>,
-    cell: &Qcell<T>,
-    new_height: &T,
-    polygon: &Polygon<T>,
-) where
+struct QuadTree<T>(pub BinaryHeap<Qcell<T>>)
+where
+    T: GeoFloat;
+
+impl<T> Deref for QuadTree<T>
+where
     T: GeoFloat,
 {
-    let two = T::one() + T::one();
-    let centroid_x = cell.centroid.x();
-    let centroid_y = cell.centroid.y();
-    [
-        (centroid_x - *new_height, centroid_y - *new_height),
-        (centroid_x + *new_height, centroid_y - *new_height),
-        (centroid_x - *new_height, centroid_y + *new_height),
-        (centroid_x + *new_height, centroid_y + *new_height),
-    ]
-    .iter()
-    .for_each(|combo| {
-        let new_dist = signed_distance(combo.0, combo.1, polygon);
-        mpq.push(Qcell::new(
-            combo.0,
-            combo.1,
-            *new_height,
-            new_dist,
-            new_dist + *new_height * two.sqrt(),
-        ));
-    });
+    type Target = BinaryHeap<Qcell<T>>;
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+impl<T> DerefMut for QuadTree<T>
+where
+    T: GeoFloat,
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl<T> QuadTree<T>
+where
+    T: GeoFloat,
+{
+    pub fn new(bbox: Rect<T>, half_extent: T, polygon: &Polygon<T>) -> Self {
+        let mut cell_queue: BinaryHeap<Qcell<T>> = BinaryHeap::new();
+
+        let two = T::one() + T::one();
+        let cell_size = half_extent * two;
+
+        let nx = (bbox.width() / cell_size).ceil().to_usize();
+        let ny = (bbox.height() / cell_size).ceil().to_usize();
+
+        match (nx, ny) {
+            (Some(nx), Some(ny)) => {
+                let one = T::one();
+                let delta_mid = Coord { x: one, y: one } * half_extent;
+                let origin = bbox.min();
+                let inital_points = (0..nx)
+                    .flat_map(|x| (0..ny).map(move |y| (x, y)))
+                    .filter_map(|(x, y)| Some((T::from(x)?, T::from(y)?)))
+                    .map(|(x, y)| Coord { x, y } * cell_size)
+                    .map(|delta_cell| origin + delta_cell + delta_mid)
+                    .map(Point::from)
+                    .map(|centroid| Qcell::new(centroid, half_extent, polygon));
+                cell_queue.extend(inital_points);
+            }
+            _ => {
+                // Do nothing, maybe error instead?
+            }
+        }
+
+        Self(cell_queue)
+    }
+
+    pub fn add_quad(&mut self, cell: &Qcell<T>, half_extent: T, polygon: &Polygon<T>) {
+        let new_cells = [
+            (-T::one(), -T::one()),
+            (T::one(), -T::one()),
+            (-T::one(), T::one()),
+            (T::one(), T::one()),
+        ]
+        .map(|(sign_x, sign_y)| (sign_x * half_extent, sign_y * half_extent))
+        .map(|(dx, dy)| Point::new(dx, dy))
+        .map(|delta| cell.centroid + delta)
+        .map(|centeroid| Qcell::new(centeroid, half_extent, polygon));
+        self.extend(new_cells);
+    }
 }
 
 /// Calculate a Polygon's ideal label position by calculating its ✨pole of inaccessibility✨
@@ -166,89 +210,57 @@ where
     if polygon.signed_area() == T::zero() {
         return Ok(Point::new(T::zero(), T::zero()));
     }
-    let two = T::one() + T::one();
-    // Initial best cell values
-    let centroid = polygon
-        .centroid()
-        .ok_or(PolylabelError::CentroidCalculation)?;
+
     let bbox = polygon
         .bounding_rect()
         .ok_or(PolylabelError::RectCalculation)?;
-    let width = bbox.max().x - bbox.min().x;
-    let height = bbox.max().y - bbox.min().y;
-    let cell_size = width.min(height);
+    let cell_size = bbox.width().min(bbox.height());
     // Special case for degenerate polygons
     if cell_size == T::zero() {
-        return Ok(Point::new(bbox.min().x, bbox.min().y));
+        return Ok(Point::from(bbox.min()));
     }
-    let mut h = cell_size / two;
-    let distance = signed_distance(centroid.x(), centroid.y(), polygon);
-    let max_distance = distance + T::zero() * two.sqrt();
 
-    let mut best_cell = Qcell::new(
-        centroid.x(),
-        centroid.y(),
-        T::zero(),
-        distance,
-        max_distance,
-    );
+    let two = T::one() + T::one();
+    let mut half_extent = cell_size / two;
 
-    // special case for rectangular polygons
-    let bbox_cell_dist = signed_distance(
-        bbox.min().x + width / two,
-        bbox.min().y + height / two,
-        polygon,
-    );
-    let bbox_cell = Qcell {
-        centroid: Point::new(bbox.min().x + width / two, bbox.min().y + height / two),
-        extent: T::zero(),
-        distance: bbox_cell_dist,
-        max_distance: bbox_cell_dist + T::zero() * two.sqrt(),
+    // initial best guess using centroid
+    let centroid = polygon
+        .centroid()
+        .ok_or(PolylabelError::CentroidCalculation)?;
+    let centroid_cell = Qcell::new(centroid, T::zero(), polygon);
+
+    // special case guess for rectangular polygons
+    let bbox_cell = Qcell::new(bbox.centroid(), T::zero(), polygon);
+
+    // deciding which initial guess was better
+    let mut best_cell = if bbox_cell.distance < centroid_cell.distance {
+        bbox_cell
+    } else {
+        centroid_cell
     };
 
-    if bbox_cell.distance > best_cell.distance {
-        best_cell = bbox_cell;
-    }
+    // setup priority queue
+    let mut cell_queue = QuadTree::<T>::new(bbox, half_extent, polygon);
 
-    // Priority queue
-    let mut cell_queue: BinaryHeap<Qcell<T>> = BinaryHeap::new();
-    // Build an initial quadtree node, which covers the Polygon
-    let mut x = bbox.min().x;
-    let mut y;
-    while x < bbox.max().x {
-        y = bbox.min().y;
-        while y < bbox.max().y {
-            let latest_dist = signed_distance(x + h, y + h, polygon);
-            cell_queue.push(Qcell {
-                centroid: Point::new(x + h, y + h),
-                extent: h,
-                distance: latest_dist,
-                max_distance: latest_dist + h * two.sqrt(),
-            });
-            y = y + cell_size;
-        }
-        x = x + cell_size;
-    }
     // Now try to find better solutions
-    while !cell_queue.is_empty() {
-        let cell = cell_queue.pop().ok_or(PolylabelError::EmptyQueue)?;
+    while let Some(cell) = cell_queue.pop() {
         // Update the best cell if we find a cell with greater distance
         if cell.distance > best_cell.distance {
-            best_cell.centroid = Point::new(cell.centroid.x(), cell.centroid.y());
-            best_cell.extent = cell.extent;
-            best_cell.distance = cell.distance;
-            best_cell.max_distance = cell.max_distance;
+            best_cell = Qcell { ..cell };
         }
+
         // Bail out of this iteration if we can't find a better solution
         if cell.max_distance - best_cell.distance <= *tolerance {
             continue;
         }
+
         // Otherwise, add a new quadtree node and start again
-        h = cell.extent / two;
-        add_quad(&mut cell_queue, &cell, &h, polygon);
+        half_extent = cell.half_extent / two;
+        cell_queue.add_quad(&cell, half_extent, polygon);
     }
+
     // We've exhausted the queue, so return the best solution we've found
-    Ok(Point::new(best_cell.centroid.x(), best_cell.centroid.y()))
+    Ok(best_cell.centroid)
 }
 
 #[cfg(test)]
@@ -316,26 +328,23 @@ mod tests {
     fn test_queue() {
         let a = Qcell {
             centroid: Point::new(1.0, 2.0),
-            extent: 3.0,
+            half_extent: 3.0,
             distance: 4.0,
             max_distance: 8.0,
         };
         let b = Qcell {
             centroid: Point::new(1.0, 2.0),
-            extent: 3.0,
+            half_extent: 3.0,
             distance: 4.0,
             max_distance: 7.0,
         };
         let c = Qcell {
             centroid: Point::new(1.0, 2.0),
-            extent: 3.0,
+            half_extent: 3.0,
             distance: 4.0,
             max_distance: 9.0,
         };
-        let mut v = vec![];
-        v.push(a);
-        v.push(b);
-        v.push(c);
+        let v = vec![a, b, c];
         let mut q = BinaryHeap::from(v);
         assert_eq!(q.pop().unwrap().max_distance, 9.0);
         assert_eq!(q.pop().unwrap().max_distance, 8.0);
