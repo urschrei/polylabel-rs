@@ -10,7 +10,7 @@ license = "MIT"
 edition = "2021"
 
 [dependencies]
-libc = "0.2.29"
+libc = "0.2.149"
 geo = "0.26.0"
 num-traits = "0.2.8"
 thiserror = "1.0.4"
