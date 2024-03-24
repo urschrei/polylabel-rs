@@ -56,6 +56,8 @@ An auto-generated header file is available at [`include/header.h`](include/heade
 
 ## Performance vs Accuracy
 Using a 4-core 2.3 GHz Intel Core i5, finding a label position on a ~9k-vertex polygon (representing the Norwegian mainland) using a tolerance of `1.0` takes around 9 ms. Depending upon the dimensions of your polygon(s), you may require a higher tolerance (i.e. a smaller number). See [here](https://gis.stackexchange.com/questions/8650/measuring-accuracy-of-latitude-and-longitude/8674#8674) for some guidance on the accuracy provided by each decimal place.
+### CPU Optimizations
+Build using the `target-cpu=native` `RUSTFLAG` for a ~10 % perf improvement
 
 ## Binaries
 are available in [releases](https://github.com/urschrei/polylabel-rs/releases).
