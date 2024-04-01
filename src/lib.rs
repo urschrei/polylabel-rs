@@ -94,7 +94,13 @@ where
 {
     let inside = polygon.contains(&point);
     // Use LineString distance, because Polygon distance returns 0.0 for inside
-    let distance = point.euclidean_distance(polygon.exterior());
+    let exterior_distance = point.euclidean_distance(polygon.exterior());
+    let distance = polygon
+        .interiors()
+        .iter()
+        .map(|x| point.euclidean_distance(x))
+        .fold(exterior_distance, T::min);
+
     if inside {
         distance
     } else {
@@ -271,7 +277,7 @@ where
 mod tests {
     use super::{polylabel, Qcell};
     use geo::prelude::*;
-    use geo::{Point, Polygon};
+    use geo::{Point, Polygon, LineString};
     use std::collections::BinaryHeap;
     #[test]
     // polygons are those used in Shapely's tests
@@ -326,6 +332,17 @@ mod tests {
         let b_poly = Polygon::new(b_coords.into(), vec![]);
         let b_res = polylabel(&b_poly, &1.0).unwrap();
         assert_eq!(b_res, Point::new(0.0, 0.0));
+    }
+    #[test]
+    fn polygon_with_hole_test() {
+        let outer = vec![(0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0)];
+        let inner = vec![(60.0, 60.0), (60.0, 80.0), (80.0, 80.0), (80.0, 60.0)];
+        let hole_poly = Polygon::new(
+            LineString::from(outer),
+            vec![LineString::from(inner)],
+        );
+        let hole_res = polylabel(&hole_poly, &1.0).unwrap();
+        assert_eq!(hole_res, Point::new(35.15625, 35.15625));
     }
     #[test]
     // Is our priority queue behaving as it should?
