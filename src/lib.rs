@@ -143,23 +143,20 @@ where
         let nx = (bbox.width() / cell_size).ceil().to_usize();
         let ny = (bbox.height() / cell_size).ceil().to_usize();
 
-        match (nx, ny) {
-            (Some(nx), Some(ny)) => {
-                let one = T::one();
-                let delta_mid = Coord { x: one, y: one } * half_extent;
-                let origin = bbox.min();
-                let inital_points = (0..nx)
-                    .flat_map(|x| (0..ny).map(move |y| (x, y)))
-                    .filter_map(|(x, y)| Some((T::from(x)?, T::from(y)?)))
-                    .map(|(x, y)| Coord { x, y } * cell_size)
-                    .map(|delta_cell| origin + delta_cell + delta_mid)
-                    .map(Point::from)
-                    .map(|centroid| Qcell::new(centroid, half_extent, polygon));
-                cell_queue.extend(inital_points);
-            }
-            _ => {
-                // Do nothing, maybe error instead?
-            }
+        if let (Some(nx), Some(ny)) = (nx, ny) {
+            let one = T::one();
+            let delta_mid = Coord { x: one, y: one } * half_extent;
+            let origin = bbox.min();
+            let inital_points = (0..nx)
+                .flat_map(|x| (0..ny).map(move |y| (x, y)))
+                .filter_map(|(x, y)| Some((T::from(x)?, T::from(y)?)))
+                .map(|(x, y)| Coord { x, y } * cell_size)
+                .map(|delta_cell| origin + delta_cell + delta_mid)
+                .map(Point::from)
+                .map(|centroid| Qcell::new(centroid, half_extent, polygon));
+            cell_queue.extend(inital_points);
+        } else {
+            // Do nothing, maybe error instead?
         }
 
         Self(cell_queue)
@@ -285,7 +282,7 @@ mod tests {
         let coords = include!("../tests/fixtures/poly1.rs");
         let poly = Polygon::new(coords.into(), vec![]);
         let res = polylabel(&poly, &10.000).unwrap();
-        assert_eq!(res, Point::new(59.35615556364569, 121.83919629746435));
+        assert_eq!(res, Point::new(59.356_155_563_645_69, 121.839_196_297_464_35));
     }
     #[test]
     // does a concave polygon contain the calculated point?
@@ -301,7 +298,7 @@ mod tests {
         let coords = include!("../tests/fixtures/poly3.rs");
         let poly = Polygon::new(coords.into(), vec![]);
         let res = polylabel(&poly, &0.001).unwrap();
-        assert_eq!(res, Point::new(-0.45556816445920356, 51.54848888202887));
+        assert_eq!(res, Point::new(-0.455_568_164_459_203_56, 51.548_488_882_028_87));
     }
     #[test]
     fn polygon_l_test() {
