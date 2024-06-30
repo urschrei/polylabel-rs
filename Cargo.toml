@@ -6,7 +6,7 @@ description = "A Rust implementation of the Polylabel algorithm for finding opti
 readme = "README.md"
 keywords = ["geo", "polylabel", "gis"]
 repository = "https://github.com/urschrei/polylabel-rs"
-license = "MIT"
+license = "BlueOak-1.0.0"
 edition = "2021"
 rust-version = "1.70"
 
