@@ -274,7 +274,7 @@ where
 mod tests {
     use super::{polylabel, Qcell};
     use geo::prelude::*;
-    use geo::{Point, Polygon, LineString};
+    use geo::{LineString, Point, Polygon};
     use std::collections::BinaryHeap;
     #[test]
     // polygons are those used in Shapely's tests
@@ -282,7 +282,10 @@ mod tests {
         let coords = include!("../tests/fixtures/poly1.rs");
         let poly = Polygon::new(coords.into(), vec![]);
         let res = polylabel(&poly, &10.000).unwrap();
-        assert_eq!(res, Point::new(59.356_155_563_645_69, 121.839_196_297_464_35));
+        assert_eq!(
+            res,
+            Point::new(59.356_155_563_645_69, 121.839_196_297_464_35)
+        );
     }
     #[test]
     // does a concave polygon contain the calculated point?
@@ -298,7 +301,10 @@ mod tests {
         let coords = include!("../tests/fixtures/poly3.rs");
         let poly = Polygon::new(coords.into(), vec![]);
         let res = polylabel(&poly, &0.001).unwrap();
-        assert_eq!(res, Point::new(-0.455_568_164_459_203_56, 51.548_488_882_028_87));
+        assert_eq!(
+            res,
+            Point::new(-0.455_568_164_459_203_56, 51.548_488_882_028_87)
+        );
     }
     #[test]
     fn polygon_l_test() {
@@ -334,10 +340,7 @@ mod tests {
     fn polygon_with_hole_test() {
         let outer = vec![(0.0, 0.0), (100.0, 0.0), (100.0, 100.0), (0.0, 100.0)];
         let inner = vec![(60.0, 60.0), (60.0, 80.0), (80.0, 80.0), (80.0, 60.0)];
-        let hole_poly = Polygon::new(
-            LineString::from(outer),
-            vec![LineString::from(inner)],
-        );
+        let hole_poly = Polygon::new(LineString::from(outer), vec![LineString::from(inner)]);
         let hole_res = polylabel(&hole_poly, &1.0).unwrap();
         assert_eq!(hole_res, Point::new(35.15625, 35.15625));
     }
