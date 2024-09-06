@@ -25,7 +25,7 @@ mod ffi;
 pub use crate::ffi::{polylabel_ffi, Array, Position, WrapperArray};
 
 /// Represention of a Quadtree node's cells. A node contains four Qcells.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Qcell<T>
 where
     T: GeoFloat,
@@ -44,11 +44,11 @@ impl<T> Qcell<T>
 where
     T: GeoFloat,
 {
-    fn new(centroid: Point<T>, half_extent: T, polygon: &Polygon<T>) -> Qcell<T> {
+    fn new(centroid: Point<T>, half_extent: T, polygon: &Polygon<T>) -> Self {
         let two = T::one() + T::one();
         let distance = signed_distance(centroid, polygon);
         let max_distance = distance + half_extent * two.sqrt();
-        Qcell {
+        Self {
             centroid,
             half_extent,
             distance,
@@ -61,7 +61,7 @@ impl<T> Ord for Qcell<T>
 where
     T: GeoFloat,
 {
-    fn cmp(&self, other: &Qcell<T>) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
         self.max_distance.partial_cmp(&other.max_distance).unwrap()
     }
 }
@@ -69,7 +69,7 @@ impl<T> PartialOrd for Qcell<T>
 where
     T: GeoFloat,
 {
-    fn partial_cmp(&self, other: &Qcell<T>) -> Option<Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
@@ -78,7 +78,7 @@ impl<T> PartialEq for Qcell<T>
 where
     T: GeoFloat,
 {
-    fn eq(&self, other: &Qcell<T>) -> bool
+    fn eq(&self, other: &Self) -> bool
     where
         T: GeoFloat,
     {
