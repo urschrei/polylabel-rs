@@ -25,7 +25,7 @@ mod ffi;
 pub use crate::ffi::{polylabel_ffi, Array, Position, WrapperArray};
 
 /// Represention of a Quadtree node's cells. A node contains four Qcells.
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone)]
 struct Qcell<T>
 where
     T: GeoFloat,
