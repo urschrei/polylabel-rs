@@ -14,7 +14,7 @@ rust-version = "1.70"
 libc = {version = "0.2.153", default-features=false, optional = true}
 geo = "0.29.0"
 num-traits = "0.2.18"
-thiserror = "1.0.57"
+thiserror = "2.0.0"
 
 [build-dependencies]
 cbindgen = { version = "0.26.0", default-features=false, optional = true}
