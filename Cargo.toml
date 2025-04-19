@@ -8,13 +8,13 @@ keywords = ["geo", "polylabel", "gis"]
 repository = "https://github.com/urschrei/polylabel-rs"
 license = "BlueOak-1.0.0"
 edition = "2021"
-rust-version = "1.70"
+rust-version = "1.82"
 
 [dependencies]
-libc = {version = "0.2.153", default-features=false, optional = true}
+libc = {version = "0.2.172", default-features=false, optional = true}
 geo = "0.30.0"
-num-traits = "0.2.18"
-thiserror = "2.0.11"
+num-traits = "0.2.19"
+thiserror = "2.0.12"
 
 [build-dependencies]
 cbindgen = { version = "0.28.0", default-features=false, optional = true}
