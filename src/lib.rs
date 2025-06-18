@@ -94,11 +94,11 @@ where
 {
     let inside = polygon.contains(&point);
     // Use LineString distance, because Polygon distance returns 0.0 for inside
-    let exterior_distance = point.euclidean_distance(polygon.exterior());
+    let exterior_distance = Euclidean.distance(&point, polygon.exterior());
     let distance = polygon
         .interiors()
         .iter()
-        .map(|x| point.euclidean_distance(x))
+        .map(|x| Euclidean.distance(&point, x))
         .fold(exterior_distance, T::min);
 
     if inside {
