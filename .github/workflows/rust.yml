@@ -19,22 +19,22 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - build: linux
-          os: ubuntu-latest
-          rust: stable
-          target: x86_64-unknown-linux-gnu
-          use-cross: false
-        - build: macos
-          os: macos-latest
-          rust: stable
-          target: x86_64-apple-darwin
-          use-cross: false
-          deptarget: 10.9
-        - build: windows
-          os: windows-latest
-          rust: stable
-          target: x86_64-pc-windows-msvc
-          use-cross: false
+          - build: linux
+            os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-linux-gnu
+            use-cross: false
+          - build: macos
+            os: macos-latest
+            rust: stable
+            target: x86_64-apple-darwin
+            use-cross: false
+            deptarget: 10.9
+          - build: windows
+            os: windows-latest
+            rust: stable
+            target: x86_64-pc-windows-msvc
+            use-cross: false
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rs/toolchain@v1
@@ -57,33 +57,33 @@ jobs:
       fail-fast: false
       matrix:
         include:
-        - build: linux
-          os: ubuntu-latest
-          rust: stable
-          target: x86_64-unknown-linux-gnu
-          use-cross: true
-        - build: linux
-          os: ubuntu-latest
-          rust: stable
-          target: aarch64-unknown-linux-gnu
-          use-cross: true
-        - build: macos
-          os: macos-latest
-          rust: stable
-          target: x86_64-apple-darwin
-          use-cross: false
-          deptarget: 10.9
-        - build: macos
-          os: macos-latest
-          rust: stable
-          target: aarch64-apple-darwin
-          use-cross: false
-          deptarget: 11.0
-        - build: windows
-          os: windows-latest
-          rust: stable
-          target: x86_64-pc-windows-msvc
-          use-cross: false
+          - build: linux
+            os: ubuntu-latest
+            rust: stable
+            target: x86_64-unknown-linux-gnu
+            use-cross: true
+          - build: linux
+            os: ubuntu-latest
+            rust: stable
+            target: aarch64-unknown-linux-gnu
+            use-cross: true
+          - build: macos
+            os: macos-latest
+            rust: stable
+            target: x86_64-apple-darwin
+            use-cross: false
+            deptarget: 10.9
+          - build: macos
+            os: macos-latest
+            rust: stable
+            target: aarch64-apple-darwin
+            use-cross: false
+            deptarget: 11.0
+          - build: windows
+            os: windows-latest
+            rust: stable
+            target: x86_64-pc-windows-msvc
+            use-cross: false
     steps:
       - name: Switch to macOS 13.x SDK
         if: matrix.target == 'aarch64-apple-darwin'
