@@ -37,17 +37,22 @@ jobs:
             use-cross: false
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: ${{ matrix.target }}
-      - uses: actions-rs/cargo@v1
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - name: Run tests
         env:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deptarget }}
-        with:
-          use-cross: ${{ matrix.use-cross }}
-          command: test
-          args: --target=${{ matrix.target }}
+        run: |
+          if [[ "${{ matrix.use-cross }}" == "true" ]]; then
+            cargo install cross --git https://github.com/cross-rs/cross
+            cross test --target=${{ matrix.target }}
+          else
+            cargo test --target=${{ matrix.target }}
+          fi
 
   build:
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
@@ -91,17 +96,22 @@ jobs:
           xcodebuild -showsdks
           SDKROOT=$(xcrun -sdk macosx13.1 --show-sdk-path)
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          target: ${{ matrix.target }}
-      - uses: actions-rs/cargo@v1
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - name: Build release
         env:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deptarget }}
-        with:
-          use-cross: ${{ matrix.use-cross }}
-          command: build
-          args: --release --target=${{ matrix.target }} --features headers
+        run: |
+          if [[ "${{ matrix.use-cross }}" == "true" ]]; then
+            cargo install cross --git https://github.com/cross-rs/cross
+            cross build --release --target=${{ matrix.target }} --features headers
+          else
+            cargo build --release --target=${{ matrix.target }} --features headers
+          fi
       - name: Install aarch64 related packages
         if: matrix.os == 'ubuntu-latest' && matrix.target == 'aarch64-unknown-linux-gnu'
         run: sudo apt-get update && sudo apt-get install gcc-aarch64-linux-gnu qemu-system-arm
