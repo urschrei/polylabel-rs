@@ -184,3 +184,20 @@ jobs:
             zipped/${{ env.ASSET_NAME }}.${{ env.EXTENSION }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release_artifacts:
+    if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
+    name: Release to crates.io
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      # IMPORTANT: this permission is mandatory for trusted publishing
+      id-token: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rust-lang/crates-io-auth-action@v1
+        id: auth
+      - run: cargo publish
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
