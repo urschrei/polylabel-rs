@@ -20,7 +20,7 @@ thiserror = "2.0.12"
 cbindgen = { version = "0.28.0", default-features=false, optional = true}
 
 [dev-dependencies]
-criterion = "0.5.1"
+criterion = "0.7.0"
 
 [features]
 headers = ["cbindgen"]
