@@ -12,7 +12,7 @@ rust-version = "1.82"
 
 [dependencies]
 libc = {version = "0.2.172", default-features=false, optional = true}
-geo = "0.30.0"
+geo = "0.31.0"
 num-traits = "0.2.19"
 thiserror = "2.0.12"
 
