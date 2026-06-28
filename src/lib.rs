@@ -6,7 +6,7 @@
 //! for finding the optimum position of a polygon label.
 //!
 //! ffi bindings are provided: enable the `ffi` and `headers` features when building the crate.
-use geo::{Coord, Rect, prelude::*};
+use geo::{Coord, Line, LineString, Rect, prelude::*};
 use geo::{GeoFloat, Point, Polygon};
 use num_traits::FromPrimitive;
 use std::cmp::Ordering;
@@ -44,9 +44,9 @@ impl<T> Qcell<T>
 where
     T: GeoFloat,
 {
-    fn new(centroid: Point<T>, half_extent: T, polygon: &Polygon<T>) -> Self {
+    fn new(centroid: Point<T>, half_extent: T, prepared: &PreparedPolygon<T>) -> Self {
         let two = T::one() + T::one();
-        let distance = signed_distance(centroid, polygon);
+        let distance = signed_distance(centroid, prepared);
         let max_distance = distance + half_extent * two.sqrt();
         Self {
             centroid,
@@ -86,14 +86,90 @@ where
     }
 }
 
+/// Number of consecutive edges grouped under a single bounding box for block-skip
+const BLOCK_SIZE: usize = 32;
+
+/// A polygon's rings pre-decomposed into edges, with the edges grouped into
+/// fixed-size blocks each carrying a bounding box. Built once per `polylabel`
+/// call so the per-cell distance scan can skip whole blocks of edges in O(1).
+struct PreparedPolygon<T>
+where
+    T: GeoFloat,
+{
+    rings: Vec<PreparedRing<T>>,
+}
+
+/// A single ring's edges and the bounding box of each consecutive block of them
+struct PreparedRing<T>
+where
+    T: GeoFloat,
+{
+    lines: Vec<Line<T>>,
+    blocks: Vec<Rect<T>>,
+}
+
+impl<T> PreparedPolygon<T>
+where
+    T: GeoFloat,
+{
+    fn new(polygon: &Polygon<T>) -> Self {
+        let rings = std::iter::once(polygon.exterior())
+            .chain(polygon.interiors())
+            .map(PreparedRing::new)
+            .collect();
+        Self { rings }
+    }
+}
+
+impl<T> PreparedRing<T>
+where
+    T: GeoFloat,
+{
+    fn new(ring: &LineString<T>) -> Self {
+        let lines: Vec<Line<T>> = ring.lines().collect();
+        let blocks = lines.chunks(BLOCK_SIZE).map(block_bbox).collect();
+        Self { lines, blocks }
+    }
+}
+
+/// Bounding box enclosing every endpoint of a block of edges
+fn block_bbox<T>(lines: &[Line<T>]) -> Rect<T>
+where
+    T: GeoFloat,
+{
+    let mut min_x = T::infinity();
+    let mut min_y = T::infinity();
+    let mut max_x = T::neg_infinity();
+    let mut max_y = T::neg_infinity();
+    for line in lines {
+        for c in [line.start, line.end] {
+            if c.x < min_x {
+                min_x = c.x;
+            }
+            if c.x > max_x {
+                max_x = c.x;
+            }
+            if c.y < min_y {
+                min_y = c.y;
+            }
+            if c.y > max_y {
+                max_y = c.y;
+            }
+        }
+    }
+    Rect::new(Coord { x: min_x, y: min_y }, Coord { x: max_x, y: max_y })
+}
+
 /// Signed distance from a Qcell's centroid to a Polygon's outline
 /// Returned value is negative if the point is outside the polygon's exterior ring
 ///
-/// A single pass over every edge of every ring accumulates both the even-odd
-/// ray-cast parity (inside/outside) and the minimum distance to the outline.
-/// This replaces a separate `contains` traversal, halving the edge iteration in
-/// this hot path. The per-segment distance is still computed by geo.
-fn signed_distance<T>(point: Point<T>, polygon: &Polygon<T>) -> T
+/// A single pass over the rings accumulates both the even-odd ray-cast parity
+/// (inside/outside) and the minimum distance to the outline. Edges are grouped
+/// into blocks (see `PreparedPolygon`): a cheap point-to-bounding-box lower
+/// bound skips a whole block when it can neither hold a nearer edge nor flip the
+/// ray-cast parity. Most blocks of a ring are far from any given cell centre, so
+/// this skips the bulk of the edges. The per-segment distance is computed by geo.
+fn signed_distance<T>(point: Point<T>, prepared: &PreparedPolygon<T>) -> T
 where
     T: GeoFloat,
 {
@@ -102,16 +178,54 @@ where
     let mut inside = false;
     let mut min_distance = T::infinity();
 
-    for ring in std::iter::once(polygon.exterior()).chain(polygon.interiors()) {
-        for line in ring.lines() {
-            let a = line.start;
-            let b = line.end;
+    for ring in &prepared.rings {
+        for (block, bbox) in ring.blocks.iter().enumerate() {
+            let start = block * BLOCK_SIZE;
+            let end = (start + BLOCK_SIZE).min(ring.lines.len());
+            let bmin = bbox.min();
+            let bmax = bbox.max();
 
-            if ((a.y > y) != (b.y > y)) && (x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) {
-                inside = !inside;
+            // lower bound on the distance from the point to any edge in this
+            // block: a point-to-bounding-box clamp, zero when inside the box
+            let dx = if x < bmin.x {
+                bmin.x - x
+            } else if x > bmax.x {
+                x - bmax.x
+            } else {
+                T::zero()
+            };
+            let dy = if y < bmin.y {
+                bmin.y - y
+            } else if y > bmax.y {
+                y - bmax.y
+            } else {
+                T::zero()
+            };
+            let skip_dist = dx * dx + dy * dy >= min_distance * min_distance;
+
+            // edges here can only flip parity if the bbox straddles y and
+            // extends right of x; otherwise no edge crosses the rightward ray
+            let skip_cross = y < bmin.y || y >= bmax.y || x > bmax.x;
+
+            if skip_dist && skip_cross {
+                continue;
             }
 
-            min_distance = min_distance.min(Euclidean.distance(&point, &line));
+            for line in &ring.lines[start..end] {
+                let a = line.start;
+                let b = line.end;
+
+                if !skip_cross
+                    && ((a.y > y) != (b.y > y))
+                    && (x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x)
+                {
+                    inside = !inside;
+                }
+
+                if !skip_dist {
+                    min_distance = min_distance.min(Euclidean.distance(&point, line));
+                }
+            }
         }
     }
 
@@ -144,7 +258,7 @@ impl<T> QuadTree<T>
 where
     T: GeoFloat,
 {
-    pub fn new(bbox: Rect<T>, half_extent: T, polygon: &Polygon<T>) -> Self {
+    pub fn new(bbox: Rect<T>, half_extent: T, prepared: &PreparedPolygon<T>) -> Self {
         let mut cell_queue: BinaryHeap<Qcell<T>> = BinaryHeap::new();
 
         let two = T::one() + T::one();
@@ -163,7 +277,7 @@ where
                 .map(|(x, y)| Coord { x, y } * cell_size)
                 .map(|delta_cell| origin + delta_cell + delta_mid)
                 .map(Point::from)
-                .map(|centroid| Qcell::new(centroid, half_extent, polygon));
+                .map(|centroid| Qcell::new(centroid, half_extent, prepared));
             cell_queue.extend(inital_points);
         } else {
             // Do nothing, maybe error instead?
@@ -172,7 +286,7 @@ where
         Self(cell_queue)
     }
 
-    pub fn add_quad(&mut self, cell: &Qcell<T>, half_extent: T, polygon: &Polygon<T>) {
+    pub fn add_quad(&mut self, cell: &Qcell<T>, half_extent: T, prepared: &PreparedPolygon<T>) {
         let new_cells = [
             (-T::one(), -T::one()),
             (T::one(), -T::one()),
@@ -182,7 +296,7 @@ where
         .map(|(sign_x, sign_y)| (sign_x * half_extent, sign_y * half_extent))
         .map(|(dx, dy)| Point::new(dx, dy))
         .map(|delta| cell.centroid + delta)
-        .map(|centroid| Qcell::new(centroid, half_extent, polygon));
+        .map(|centroid| Qcell::new(centroid, half_extent, prepared));
         self.extend(new_cells);
     }
 }
@@ -240,14 +354,17 @@ where
     let two = T::one() + T::one();
     let mut half_extent = cell_size / two;
 
+    // decompose the rings into blocks of edges once, up front
+    let prepared = PreparedPolygon::new(polygon);
+
     // initial best guess using centroid
     let centroid = polygon
         .centroid()
         .ok_or(PolylabelError::CentroidCalculation)?;
-    let centroid_cell = Qcell::new(centroid, T::zero(), polygon);
+    let centroid_cell = Qcell::new(centroid, T::zero(), &prepared);
 
     // special case guess for rectangular polygons
-    let bbox_cell = Qcell::new(bbox.centroid(), T::zero(), polygon);
+    let bbox_cell = Qcell::new(bbox.centroid(), T::zero(), &prepared);
 
     // deciding which initial guess was better
     let mut best_cell = if bbox_cell.distance < centroid_cell.distance {
@@ -257,7 +374,7 @@ where
     };
 
     // setup priority queue
-    let mut cell_queue = QuadTree::<T>::new(bbox, half_extent, polygon);
+    let mut cell_queue = QuadTree::<T>::new(bbox, half_extent, &prepared);
 
     // Now try to find better solutions
     while let Some(cell) = cell_queue.pop() {
@@ -273,7 +390,7 @@ where
 
         // Otherwise, add a new quadtree node and start again
         half_extent = cell.half_extent / two;
-        cell_queue.add_quad(&cell, half_extent, polygon);
+        cell_queue.add_quad(&cell, half_extent, &prepared);
     }
 
     // We've exhausted the queue, so return the best solution we've found
