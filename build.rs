@@ -11,4 +11,4 @@ fn main() {
 }
 
 #[cfg(not(feature = "cbindgen"))]
-fn main() { }
+fn main() {}

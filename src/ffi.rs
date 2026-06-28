@@ -82,7 +82,7 @@ pub extern "C" fn polylabel_ffi(
 
 #[cfg(test)]
 mod tests {
-    use crate::ffi::{polylabel_ffi, reconstitute2, Array, WrapperArray};
+    use crate::ffi::{Array, WrapperArray, polylabel_ffi, reconstitute2};
     use geo::Point;
     use libc::{c_void, size_t};
     use std::mem;

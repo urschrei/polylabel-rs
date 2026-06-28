@@ -6,7 +6,7 @@
 //! for finding the optimum position of a polygon label.
 //!
 //! ffi bindings are provided: enable the `ffi` and `headers` features when building the crate.
-use geo::{prelude::*, Coord, Rect};
+use geo::{Coord, Rect, prelude::*};
 use geo::{GeoFloat, Point, Polygon};
 use num_traits::FromPrimitive;
 use std::cmp::Ordering;
@@ -22,7 +22,7 @@ use errors::PolylabelError;
 mod ffi;
 #[cfg(not(target_arch = "wasm32"))]
 #[cfg(feature = "ffi")]
-pub use crate::ffi::{polylabel_ffi, Array, Position, WrapperArray};
+pub use crate::ffi::{Array, Position, WrapperArray, polylabel_ffi};
 
 /// Represention of a Quadtree node's cells. A node contains four Qcells.
 #[derive(Debug, Copy, Clone)]
@@ -88,24 +88,34 @@ where
 
 /// Signed distance from a Qcell's centroid to a Polygon's outline
 /// Returned value is negative if the point is outside the polygon's exterior ring
+///
+/// A single pass over every edge of every ring accumulates both the even-odd
+/// ray-cast parity (inside/outside) and the minimum distance to the outline.
+/// This replaces a separate `contains` traversal, halving the edge iteration in
+/// this hot path. The per-segment distance is still computed by geo.
 fn signed_distance<T>(point: Point<T>, polygon: &Polygon<T>) -> T
 where
     T: GeoFloat,
 {
-    let inside = polygon.contains(&point);
-    // Use LineString distance, because Polygon distance returns 0.0 for inside
-    let exterior_distance = Euclidean.distance(&point, polygon.exterior());
-    let distance = polygon
-        .interiors()
-        .iter()
-        .map(|x| Euclidean.distance(&point, x))
-        .fold(exterior_distance, T::min);
+    let x = point.x();
+    let y = point.y();
+    let mut inside = false;
+    let mut min_distance = T::infinity();
 
-    if inside {
-        distance
-    } else {
-        -distance
+    for ring in std::iter::once(polygon.exterior()).chain(polygon.interiors()) {
+        for line in ring.lines() {
+            let a = line.start;
+            let b = line.end;
+
+            if ((a.y > y) != (b.y > y)) && (x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) {
+                inside = !inside;
+            }
+
+            min_distance = min_distance.min(Euclidean.distance(&point, &line));
+        }
     }
+
+    if inside { min_distance } else { -min_distance }
 }
 
 struct QuadTree<T>(pub BinaryHeap<Qcell<T>>)
@@ -272,7 +282,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::{polylabel, Qcell};
+    use super::{Qcell, polylabel};
     use geo::prelude::*;
     use geo::{LineString, Point, Polygon};
     use std::collections::BinaryHeap;
