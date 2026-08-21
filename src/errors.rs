@@ -10,4 +10,6 @@ pub enum PolylabelError {
     CentroidCalculation,
     #[error("Couldn't calculate a bounding box for the input Polygon")]
     RectCalculation,
+    #[error("The tolerance must be a positive number (got zero, a negative number, or NaN)")]
+    InvalidTolerance,
 }
