@@ -333,10 +333,22 @@ where
 /// assert_eq!(label_position, Point::new(0.5625, 0.5625));
 /// ```
 ///
+/// # Errors
+///
+/// The tolerance must be a positive number: zero, negative, or NaN tolerances
+/// return [`PolylabelError::InvalidTolerance`], since the refinement loop
+/// cannot be guaranteed to terminate for them.
 pub fn polylabel<T>(polygon: &Polygon<T>, tolerance: &T) -> Result<Point<T>, PolylabelError>
 where
     T: GeoFloat + FromPrimitive + Sum,
 {
+    // A non-positive or NaN tolerance can subdivide forever: cells at the pole
+    // keep max_distance - best_distance positive (or the comparison is always
+    // false for NaN), so the queue grows without bound
+    if tolerance.is_nan() || *tolerance <= T::zero() {
+        return Err(PolylabelError::InvalidTolerance);
+    }
+
     // special case for degenerate polygons
     if polygon.signed_area() == T::zero() {
         return Ok(Point::new(T::zero(), T::zero()));
@@ -470,6 +482,22 @@ mod tests {
         let hole_poly = Polygon::new(LineString::from(outer), vec![LineString::from(inner)]);
         let hole_res = polylabel(&hole_poly, &1.0).unwrap();
         assert_eq!(hole_res, Point::new(35.15625, 35.15625));
+    }
+    #[test]
+    // Zero, negative, and NaN tolerances must be rejected rather than
+    // subdividing forever (see issue #70)
+    fn test_invalid_tolerance() {
+        use crate::errors::PolylabelError;
+        // a non-square rectangle: its pole is a whole segment of tied
+        // maximizers, which previously made a zero tolerance loop forever
+        let coords = vec![(0.0, 0.0), (5.0, 0.0), (5.0, 1.0), (0.0, 1.0), (0.0, 0.0)];
+        let poly = Polygon::new(coords.into(), vec![]);
+        for tol in [0.0, -1.0, f64::NAN] {
+            assert_eq!(
+                polylabel(&poly, &tol),
+                Err(PolylabelError::InvalidTolerance)
+            );
+        }
     }
     #[test]
     // Is our priority queue behaving as it should?
