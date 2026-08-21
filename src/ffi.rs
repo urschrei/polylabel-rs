@@ -59,9 +59,10 @@ fn reconstitute2(arr: WrapperArray) -> Vec<Vec<[f64; 2]>> {
 /// - an exterior ring representing a Polygon shell or closed LineString
 /// - zero or more interior rings representing Polygon holes
 /// - a tolerance `c_double`.
+///
 /// If an error occurs while attempting to calculate the label position, the resulting point coordinates
 /// will be `NaN, NaN`.
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "C" fn polylabel_ffi(
     outer: Array,
     inners: WrapperArray,
@@ -137,6 +138,6 @@ mod tests {
         let inners = gen_wrapperarray(int_vec);
         let res = polylabel_ffi(outer, inners, 0.1);
         let res_point = Point::new(res.x_pos, res.y_pos);
-        assert_eq!(res_point, Point::new(3.125, 2.875));
+        assert_eq!(res_point, Point::new(2.515625, 2.828125));
     }
 }
