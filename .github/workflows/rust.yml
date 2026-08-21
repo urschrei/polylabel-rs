@@ -43,7 +43,7 @@ jobs:
       - name: Run tests
         env:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deptarget }}
-        run: cargo test --target=${{ matrix.target }}
+        run: cargo test --target=${{ matrix.target }} --features ffi
 
   build:
     if: github.event_name == 'push' && contains(github.ref, 'refs/tags/')
@@ -86,7 +86,7 @@ jobs:
       - name: Build release
         env:
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.deptarget }}
-        run: cargo build --release --target=${{ matrix.target }} --features headers
+        run: cargo build --release --target=${{ matrix.target }} --features headers,ffi
       - name: Gather Assets
         run: |
           src=$(pwd)
