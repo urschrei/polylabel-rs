@@ -1,7 +1,16 @@
 version: 2
 updates:
-- package-ecosystem: cargo
-  directory: "/"
-  schedule:
-    interval: daily
-  open-pull-requests-limit: 10
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      cargo:
+        applies-to: version-updates
+        patterns:
+          - "*"
+      cargo-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
