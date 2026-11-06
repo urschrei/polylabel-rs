@@ -379,7 +379,7 @@ where
     let bbox_cell = Qcell::new(bbox.centroid(), T::zero(), &prepared);
 
     // deciding which initial guess was better
-    let mut best_cell = if bbox_cell.distance < centroid_cell.distance {
+    let mut best_cell = if bbox_cell.distance > centroid_cell.distance {
         bbox_cell
     } else {
         centroid_cell
